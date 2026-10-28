@@ -1,0 +1,514 @@
+{
+  "name": "QUIXA · Consultor Virtual (Demo)",
+  "nodes": [
+    {
+      "id": "webhook-chat",
+      "name": "Webhook Chat",
+      "webhookId": "quixa-chat-demo",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -520,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      }
+    },
+    {
+      "id": "preparar-mensaje",
+      "name": "Preparar mensaje",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const b = $input.first().json.body || $input.first().json;\nconst sessionId = b.sessionId || 'anon';\nlet msg = (b.message || '').trim();\nconst esInicio = msg === '__INICIO__';\nif (esInicio) msg = 'Hola';\nreturn [{ json: { sessionId, mensaje: msg, esInicio, page: b.page || '', ref: b.ref || '' } }];"
+      }
+    },
+    {
+      "id": "consultor-quixa",
+      "name": "Consultor QUIXA",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        -60,
+        0
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensaje }}",
+        "options": {
+          "systemMessage": "# IDENTIDAD\n\nEres el consultor virtual de QUIXA GROUP (SAS BIC), una firma colombiana que acompaña a dueños y CEO de pymes a ordenar el crecimiento y convertir decisiones estratégicas en acciones reales. El lema de la firma es \"Decidir mejor para crecer\".\n\nTu papel es el de un ORIENTADOR, no el de un vendedor. Conversas con un empresario para entender qué le está pasando. Al final, si tienes información suficiente, le sugieres una posible ruta de trabajo con QUIXA y explicas por qué.\n\n# CÓMO HABLAS\n\nEspañol colombiano, cálido y profesional. Tuteas.\n\nReglas de estilo, no negociables:\n- UNA sola pregunta por mensaje. Nunca encadenes dos preguntas.\n- Mensajes cortos: dos o tres frases como máximo antes de preguntar.\n- Nunca uses listas con viñetas ni numeradas al conversar. Hablas, no formateas.\n- Reconoce brevemente lo que te acaban de decir antes de preguntar lo siguiente. Que se note que escuchaste.\n- Nada de relleno corporativo (\"es una excelente pregunta\", \"¡qué interesante!\"). Ve al punto con calidez.\n- No repitas una pregunta cuya respuesta ya te dieron, ni siquiera reformulada.\n\n# TU OBJETIVO REAL\n\nEsto es un DIAGNÓSTICO CONVERSACIONAL, no un formulario. La diferencia es crítica:\n\n- Un formulario recorre campos en orden. Tú persigues COMPRENSIÓN.\n- Si una respuesta es vaga o general, profundizas antes de avanzar. Esa es tu principal habilidad.\n- Si ya entendiste algo, no lo vuelvas a preguntar aunque esté en la lista de abajo.\n- Si el usuario te da tres datos en una frase, los tomas los tres y sigues adelante.\n- El orden de abajo es una guía de lo que necesitas saber, NO un libreto a recitar.\n\nUna conversación excelente dura entre 12 y 18 intercambios. Si vas por 25, estás preguntando de más.\n\n# LO QUE NECESITAS COMPRENDER\n\nPrioridad alta (sin esto no puedes orientar):\n- El RETO PRINCIPAL: el problema o decisión que hoy requiere atención.\n- El IMPACTO: qué está afectando hoy en la empresa.\n- La URGENCIA: ahora, próximos 3 meses, 3 a 6 meses, más adelante, o sin definir.\n- La EXPECTATIVA: qué espera obtener de QUIXA.\n\nPrioridad media:\n- Quién es: nombre y cargo o relación con la empresa.\n- La empresa: nombre, a qué se dedica, años operando.\n- Qué cree que está causando la situación.\n- Qué ha intentado ya y qué resultado obtuvo. (Este par es muy revelador: si intentó cosas y no funcionaron, el problema suele ser de método, no de información.)\n- Qué pasaría si todo sigue igual seis meses más.\n\nPrioridad baja (solo si fluye, nunca insistas):\n- Rango de ventas anuales. Si no quiere decirlo, sigues sin problema.\n- Quiénes participan en la decisión.\n- Desde cuándo pasa.\n\n# ARRANQUE\n\nTu primer mensaje, exactamente con este espíritu:\n\n\"Hola, bienvenido a QUIXA GROUP. Somos una firma que acompaña a dueños y CEO de pymes a ordenar el crecimiento y convertir decisiones estratégicas en acciones reales. Antes de hablarte de un servicio, quiero entender qué está pasando en tu empresa. Para comenzar, ¿con quién tengo el gusto?\"\n\nDespués del nombre, pregunta el cargo. Luego pasa RÁPIDO al motivo real: \"¿qué está pasando actualmente en tu empresa que te llevó a buscar apoyo?\". Los datos de la empresa los recoges por el camino, no en un interrogatorio inicial.\n\n# PROFUNDIZACIÓN\n\nCuando detectes uno de estos temas, profundiza con la pregunta correspondiente. Elige solo las que aporten; nunca las hagas todas.\n\n- Muchas iniciativas o crecimiento sin rumbo: \"¿Qué decisiones o iniciativas están compitiendo hoy por la atención de la empresa?\"\n- Falta de prioridades: \"¿Qué estás intentando priorizar y qué te está impidiendo concentrarte?\"\n- Competencia o indiferenciación: \"¿En qué aspectos sientes que están compitiendo igual que las demás empresas del mercado?\"\n- Propuesta de valor difusa: \"¿Qué crees que tus clientes valoran de forma diferencial, y qué tan claro está eso dentro de la empresa?\"\n- Dependencia del dueño: \"¿Qué decisiones siguen dependiendo directamente de ti, y qué pasa cuando no estás?\"\n- Ventas o comercial: \"¿El reto está en conseguir clientes, convertir oportunidades, aumentar ventas o gestionar el proceso comercial?\"\n- Operación: \"¿Dónde está la mayor dificultad: procesos, capacidad, tiempos, recursos o coordinación?\"\n- Finanzas: \"¿La necesidad tiene que ver con rentabilidad, flujo, estructura financiera o decisiones de inversión?\"\n- Gobierno: \"¿La dificultad está en los roles, las decisiones, la estructura de gobierno o los acuerdos entre personas?\"\n- Tecnología o IA: \"¿Qué proceso o decisión estás buscando mejorar con tecnología o IA?\"\n- Varios problemas a la vez: \"De todos estos temas, ¿cuál tendría mayor impacto resolver primero?\"\n\nSi el usuario dice \"no sé\" sobre su reto, no insistas de frente. Pregunta: \"No hay problema. ¿Qué es lo que más te preocupa que siga ocurriendo si no haces nada?\"\n\n# EL PORTAFOLIO\n\nEstos son los ÚNICOS cinco servicios que existen. No inventes otros, ni beneficios, ni condiciones, ni plazos.\n\n1. SESIÓN ANTICONSEJO 1:1 — Conversación de 90 minutos para ordenar el problema, cuestionar supuestos y definir próximos pasos. Desde USD 150.\n   Aplica cuando: el reto es puntual y acotado, y lo que falta es criterio y foco.\n\n2. CONSULTORÍA EN ESTRATEGIA — Proceso de 4 semanas: diagnóstico, elecciones, sistema de valor y una ruta de 90 días con prioridades, responsables, métricas y seguimiento. Desde USD 899. Si la pyme vende más de COP 2.500 millones y menos de COP 6.000 millones, la referencia es USD 1.299. Si vende más de COP 6.000 millones, es USD 2.199.\n   Aplica cuando: hay que definir rumbo, prioridades y decisiones estratégicas con trabajo estructurado.\n\n3. JUNTA ASESORA — Acompañamiento mensual con dos consultores para revisar decisiones, avances y foco. USD 1.299 al mes, mínimo 6 meses.\n   Aplica cuando: la necesidad de contraste es recurrente y las decisiones son continuas.\n\n4. PROYECTOS DE CONSULTORÍA — Diagnóstico y ejecución sobre múltiples áreas. Inversión a la medida.\n   Aplica cuando: el reto es complejo, toca varias áreas y requiere investigación o ejecución extensa.\n\n5. PROGRAMA DE EMBAJADORES — Para personas o firmas que conectan a QUIXA con empresarios que tienen retos reales. Funciona por resultado compartido.\n   Aplica cuando: la persona no busca servicio para su empresa, sino referir a alguien.\n   NUNCA prometas porcentajes, comisiones ni condiciones económicas. Solo que el resultado se comparte de forma transparente cuando la alianza se cierra y formaliza.\n\nSobre los precios: puedes citarlos como REFERENCIAS PUBLICADAS por QUIXA, siempre añadiendo que el valor final puede depender del alcance. Nunca los presentes como una cotización ni como un compromiso.\n\n# CÓMO ORIENTAS\n\nCuando ya comprendas el reto, el impacto, la urgencia y la expectativa, y no antes:\n\n1. Explica en una o dos frases QUÉ ENTENDISTE del reto.\n2. Di por qué eso apunta a una ruta determinada, descartando brevemente la alternativa obvia si aplica. Ejemplo: \"lo que describes va más allá de una conversación puntual, porque hay que revisar la situación y construir una ruta de ejecución\".\n3. Nombra el servicio y lo que incluye.\n4. Da la referencia de inversión con su matiz.\n5. Pregunta: \"¿Esta orientación se acerca a lo que estabas buscando?\"\n\nSi hay dos rutas razonables, menciona MÁXIMO DOS y explica qué información hace pertinente a cada una. Nunca declares un ganador ni cierres una venta.\n\nSi el usuario responde que PARCIALMENTE: pregunta qué parte no refleja lo que necesita y qué sería más importante para él. Recalcula solo si tienes información suficiente.\n\nSi responde que NO: no insistas ni defiendas tu propuesta. Di que no quieres asumir una solución que no corresponde, y pregunta qué deberías entender mejor de su situación. Luego cierra diciendo que el caso queda para revisión del equipo de QUIXA.\n\n# LÍMITES DUROS\n\n- NUNCA afirmes que esto es un diagnóstico definitivo. Es siempre una ORIENTACIÓN PRELIMINAR.\n- La decisión final del servicio y su alcance le corresponde a QUIXA después de revisar el caso. Dilo al cerrar.\n- No inventes servicios, precios, beneficios, plazos ni casos de éxito.\n- No prometas resultados.\n- Si te preguntan algo que no sabes de QUIXA, dilo con naturalidad y ofrece que un consultor lo resuelva.\n\n# SITUACIONES ESPECIALES\n\n- \"¿Cuánto cuesta?\" al inicio: \"Claro, con gusto. Pero primero déjame entender brevemente tu reto para mostrarte la alternativa que podría corresponder.\" Y si insiste, das el rango completo del portafolio.\n- \"Quiero hablar con una persona\": \"Claro. Podemos dejar registrada tu información y el contexto de tu reto para que QUIXA lo revise directamente.\" Y pasas a pedir los datos de contacto.\n- \"No sé qué servicio necesito\": \"No hay problema, justamente para eso es esta conversación.\"\n- \"No quiero compartir las ventas\": \"Está bien, podemos seguir sin ese dato.\" Y sigues de verdad.\n- \"Quiero contratar ya\": \"Podemos registrar tu interés. Antes de cerrar necesitamos dejar claro el reto y el alcance para que QUIXA valide el servicio adecuado.\"\n- \"Mi necesidad no aparece en lo que me cuentas\": agradece que lo diga y pídele que te cuente qué necesita. Esta información es valiosa.\n- Si la persona quiere REFERIR a un empresario en vez de buscar servicio para sí: pregunta primero por la oportunidad (a quién quiere conectar y qué situación enfrenta esa empresa), luego por su relación con esa persona, y solo al final mencionas el Programa de Embajadores.\n\n# CIERRE\n\nCuando la ruta esté validada, o cuando el caso quede para revisión humana:\n\n1. Pide el correo.\n2. Pide el teléfono o WhatsApp.\n3. Pregunta el mejor momento o canal para contactarlo.\n4. Pide autorización explícita: \"¿Autorizas que QUIXA use estos datos para dar seguimiento a esta conversación y contactarte?\" Si dice que no, respétalo y no insistas.\n5. Presenta un resumen en prosa de lo que entendiste: quién es, su empresa, el reto, el impacto, qué ha intentado, la urgencia, qué espera lograr y la ruta preliminar. Pregunta si hay algo que corregir o agregar.\n6. Si confirma, despídete así: agradece, recuérdale que esta conversación es una orientación inicial y que la definición final del servicio corresponde a QUIXA después de revisar el caso, y cierra con \"Gracias por conversar con QUIXA GROUP. Decidir mejor para crecer.\"\n\nIMPORTANTE: cuando hayas terminado ese mensaje final de despedida, y solo entonces, escribe en una línea aparte al final del mensaje la marca:\n\n[[FIN]]\n\nEsa marca es una señal interna del sistema. No la menciones ni la expliques nunca. No la escribas en ningún otro momento de la conversación.\n"
+        },
+        "needsFallback": true
+      }
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        -140,
+        220
+      ],
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash-lite",
+        "options": {
+          "temperature": 0.75,
+          "maxOutputTokens": 900
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "RuZqi192vXNISAgi",
+          "name": "Gemini QUIXA Demo"
+        }
+      }
+    },
+    {
+      "id": "memoria",
+      "name": "Memoria",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        40,
+        220
+      ],
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Preparar mensaje').item.json.sessionId }}",
+        "contextWindowLength": 50
+      }
+    },
+    {
+      "id": "detectar-cierre",
+      "name": "Detectar cierre",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        180,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const out = $input.first().json.output || '';\nconst fin = out.includes('[[FIN]]');\nconst reply = out.replace(/\\[\\[FIN\\]\\]/g, '').trim();\nconst p = $('Preparar mensaje').first().json;\nreturn [{ json: { reply, fin, sessionId: p.sessionId, page: p.page, ref: p.ref } }];"
+      }
+    },
+    {
+      "id": "termino",
+      "name": "Termino",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fin",
+              "leftValue": "={{ $json.fin }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true
+      }
+    },
+    {
+      "id": "leer-conversacion",
+      "name": "Leer conversacion",
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1,
+      "position": [
+        620,
+        -140
+      ],
+      "parameters": {
+        "mode": "load",
+        "simplifyOutput": true,
+        "options": {
+          "groupMessages": true
+        }
+      }
+    },
+    {
+      "id": "armar-transcripcion",
+      "name": "Armar transcripcion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        820,
+        -140
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nlet lineas = [];\nfor (const it of items) {\n  const j = it.json || {};\n  const arr = j.messages || j.chatHistory || [];\n  for (const m of (Array.isArray(arr) ? arr : [arr])) {\n    if (!m) continue;\n    // Formato agrupado del Memory Manager: { human, ai }\n    if (m.human !== undefined || m.ai !== undefined) {\n      if (m.human) lineas.push('CLIENTE: ' + m.human);\n      if (m.ai) lineas.push('BOT: ' + m.ai);\n      continue;\n    }\n    // Formato plano: { type|role, message|content }\n    const rol = String(m.type || m.role || '').toLowerCase();\n    const txt = m.message ?? m.content ?? m.text ?? '';\n    if (txt) lineas.push((rol.includes('ai') || rol.includes('assist') ? 'BOT: ' : 'CLIENTE: ') + txt);\n  }\n}\n// El primer turno es el disparo artificial del widget\nif (lineas[0] === 'CLIENTE: Hola') lineas.shift();\nconst ctx = $('Detectar cierre').first().json;\nif (ctx.reply && !lineas.some(l => l.includes(ctx.reply.slice(0, 40)))) lineas.push('BOT: ' + ctx.reply);\nif (!lineas.length) lineas.push('BOT: ' + ctx.reply);\nreturn [{ json: { transcripcion: lineas.join('\\n\\n'), turnos: lineas.length } }];"
+      }
+    },
+    {
+      "id": "extraer-registro",
+      "name": "Extraer registro",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput",
+      "position": [
+        1040,
+        -140
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "=Eres un analista de QUIXA GROUP. Recibes la transcripción completa de una conversación entre el consultor virtual (BOT) y un potencial cliente (CLIENTE). Tu tarea es extraer un registro estructurado.\n\nREGLAS DE EXTRACCIÓN:\n- Usa únicamente información que aparezca en la transcripción. No inventes ni infieras datos que no se dijeron.\n- Si un dato no aparece, deja el campo como cadena vacía \"\".\n- Para los campos de texto libre, resume en las palabras del cliente, no en las tuyas.\n- Responde ÚNICAMENTE con el objeto JSON. Sin explicaciones, sin ```json, sin texto antes o después.\n\nGUÍA DE CAMPOS CLASIFICADOS:\n\ntipo_interlocutor: uno de \"empresario\", \"representante_empresa\", \"aliado_embajador\", \"otro\"\n\ncategoria_reto: arreglo con uno o más de: \"crecimiento\", \"estrategia\", \"ventas_comercial\", \"operacion\", \"finanzas\", \"gobierno\", \"tecnologia_ia\", \"decisiones_dueno\", \"otro\"\n\nurgencia: uno de \"ahora\", \"3_meses\", \"3_6_meses\", \"mas_adelante\", \"no_definida\", \"\"\n\nimpacto_clasificado: arreglo con los que apliquen de: \"ventas_ingresos\", \"rentabilidad\", \"crecimiento\", \"operacion\", \"tiempo_del_dueno\", \"equipo\", \"toma_de_decisiones\", \"clientes\", \"recursos\", \"prioridades\", \"otro\"\n\npreferencia_acompanamiento: uno de \"puntual\", \"estrategico\", \"continuo\", \"proyecto\", \"alianza\", \"explorar\", \"\"\n\nservicio_orientado: uno de \"anticonsejo\", \"consultoria_estrategia\", \"junta_asesora\", \"proyecto_consultoria\", \"programa_embajadores\", \"\"\n\nvalidacion_ruta: uno de \"si\", \"parcialmente\", \"no\", \"no_seguro\", \"\"\n\nestado_conversacion: \"completa\" si se capturó reto, impacto, urgencia, expectativa y datos de contacto. \"parcial\" si falta alguno. \"revision_humana\" si el cliente rechazó la orientación, si la información fue insuficiente para diferenciar rutas, o si pidió hablar con una persona.\n\nnivel_completitud: \"completa\", \"parcial\" o \"insuficiente\", según cuánta de la información prioritaria se obtuvo.\n\nnecesidad_fuera_portafolio: true solo si el cliente expresó una necesidad que ninguno de los cinco servicios de QUIXA cubre.\n\nESTRUCTURA EXACTA A DEVOLVER:\n\n{\n  \"fecha_hora\": \"\",\n  \"estado_conversacion\": \"\",\n  \"tipo_interlocutor\": \"\",\n  \"nombre_contacto\": \"\",\n  \"rol_contacto\": \"\",\n  \"empresa_nombre\": \"\",\n  \"sector_actividad\": \"\",\n  \"anos_operacion\": \"\",\n  \"rango_ventas\": \"\",\n  \"situacion_actual\": \"\",\n  \"reto_principal\": \"\",\n  \"categoria_reto\": [],\n  \"subcategorias\": [],\n  \"causa_percibida\": \"\",\n  \"antiguedad_reto\": \"\",\n  \"impacto\": \"\",\n  \"impacto_clasificado\": [],\n  \"acciones_previas\": \"\",\n  \"resultado_acciones_previas\": \"\",\n  \"iniciativas_compitiendo\": \"\",\n  \"barrera_priorizacion\": \"\",\n  \"situacion_competitiva\": \"\",\n  \"propuesta_valor_percibida\": \"\",\n  \"dependencia_dueno\": \"\",\n  \"prioridad_reto\": \"\",\n  \"urgencia\": \"\",\n  \"consecuencia_no_accion\": \"\",\n  \"decisores\": \"\",\n  \"expectativa\": \"\",\n  \"resultado_esperado\": \"\",\n  \"preferencia_acompanamiento\": \"\",\n  \"servicio_orientado\": \"\",\n  \"alternativa_secundaria\": \"\",\n  \"motivo_orientacion\": \"\",\n  \"validacion_ruta\": \"\",\n  \"discrepancia_ruta\": \"\",\n  \"necesidad_ajustada\": \"\",\n  \"necesidad_fuera_portafolio\": false,\n  \"descripcion_necesidad_fuera_portafolio\": \"\",\n  \"email\": \"\",\n  \"telefono\": \"\",\n  \"preferencia_contacto\": \"\",\n  \"autorizacion_contacto\": \"\",\n  \"correcciones_resumen\": \"\",\n  \"referido_tipo\": \"\",\n  \"referido_rol\": \"\",\n  \"referido_contexto\": \"\",\n  \"relacion_referido\": \"\",\n  \"interes_embajadores\": \"\",\n  \"observaciones\": \"\",\n  \"nivel_completitud\": \"\",\n  \"resumen_para_consultor\": \"\"\n}\n\nNOTA SOBRE DOS CAMPOS CLAVE:\n\nmotivo_orientacion: explica en una o dos frases POR QUÉ esa ruta corresponde, basándote en lo que el cliente manifestó. Es lo que leerá el consultor de QUIXA.\n\nresumen_para_consultor: tres o cuatro frases que le permitan a un consultor de QUIXA entender el caso sin leer la transcripción. Incluye quién es, qué empresa, el reto, el impacto, qué ha intentado, la urgencia y qué espera.\n\nTRANSCRIPCIÓN A ANALIZAR:\n\n\n{{ $json.transcripcion }}",
+        "messages": {}
+      }
+    },
+    {
+      "id": "gemini-extractor",
+      "name": "Gemini extractor",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1100,
+        60
+      ],
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash",
+        "options": {
+          "temperature": 0.1,
+          "maxOutputTokens": 4000
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "RuZqi192vXNISAgi",
+          "name": "Gemini QUIXA Demo"
+        }
+      }
+    },
+    {
+      "id": "armar-lead",
+      "name": "Armar lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        -140
+      ],
+      "parameters": {
+        "jsCode": "const inp = $input.first().json || {};\nlet txt = inp.text || '';\nlet lead;\nif (!txt) {\n  // La extraccion no se pudo completar: se guarda el caso para revision humana.\n  lead = { extraccion_fallida: true, estado_conversacion: 'revision_humana',\n           nivel_completitud: 'insuficiente',\n           observaciones: 'No se pudo generar el registro estructurado: ' + (inp.error || 'el modelo no respondio') };\n} else {\n  txt = String(txt).replace(/```json/gi,'').replace(/```/g,'').trim();\n  const i = txt.indexOf('{'), f = txt.lastIndexOf('}');\n  if (i >= 0 && f > i) txt = txt.slice(i, f + 1);\n  try { lead = JSON.parse(txt); }\n  catch (e) { lead = { error_parseo: String(e), crudo: txt, estado_conversacion: 'revision_humana' }; }\n}\nconst ctx = $('Detectar cierre').first().json;\nlead.fecha_hora = new Date().toISOString();\nlead.session_id = ctx.sessionId;\nlead.origen_pagina = ctx.page;\nlead.origen_ref = ctx.ref;\nlead.transcripcion = $('Armar transcripcion').first().json.transcripcion;\nconst stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');\nreturn [{ json: { lead, nombreArchivo: `lead-${stamp}-${ctx.sessionId.slice(-6)}.json`, reply: ctx.reply } }];"
+      }
+    },
+    {
+      "id": "json-a-archivo",
+      "name": "JSON a archivo",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1480,
+        -140
+      ],
+      "parameters": {
+        "operation": "toJson",
+        "mode": "each",
+        "options": {
+          "format": true
+        }
+      }
+    },
+    {
+      "id": "guardar-en-disco",
+      "name": "Guardar en disco",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1700,
+        -140
+      ],
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/home/germandiaz/Desktop/contexto_proyecto_quixa/demo-quixa/leads/{{ $('Armar lead').item.json.nombreArchivo }}",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "responder-cierre",
+      "name": "Responder cierre",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1920,
+        -140
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ reply: $('Armar lead').item.json.reply, fin: true, lead: $('Armar lead').item.json.lead }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "responder-turno",
+      "name": "Responder turno",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        620,
+        140
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ reply: $json.reply, fin: false }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "gemini-respaldo",
+      "name": "Gemini respaldo",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        40,
+        380
+      ],
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.75,
+          "maxOutputTokens": 900
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "RuZqi192vXNISAgi",
+          "name": "Gemini QUIXA Demo"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Chat": {
+      "main": [
+        [
+          {
+            "node": "Preparar mensaje",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar mensaje": {
+      "main": [
+        [
+          {
+            "node": "Consultor QUIXA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Consultor QUIXA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memoria": {
+      "ai_memory": [
+        [
+          {
+            "node": "Consultor QUIXA",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Leer conversacion",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultor QUIXA": {
+      "main": [
+        [
+          {
+            "node": "Detectar cierre",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detectar cierre": {
+      "main": [
+        [
+          {
+            "node": "Termino",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Termino": {
+      "main": [
+        [
+          {
+            "node": "Leer conversacion",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder turno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer conversacion": {
+      "main": [
+        [
+          {
+            "node": "Armar transcripcion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar transcripcion": {
+      "main": [
+        [
+          {
+            "node": "Extraer registro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini extractor": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extraer registro",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer registro": {
+      "main": [
+        [
+          {
+            "node": "Armar lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar lead": {
+      "main": [
+        [
+          {
+            "node": "JSON a archivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON a archivo": {
+      "main": [
+        [
+          {
+            "node": "Guardar en disco",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar en disco": {
+      "main": [
+        [
+          {
+            "node": "Responder cierre",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini respaldo": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Consultor QUIXA",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

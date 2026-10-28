@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leads capturados · QUIXA</title>
+<style>
+  :root{--navy:#1B2A5B;--naranja:#F26B3A;--tinta:#1A1F36;--gris:#5A6485;--linea:#E4E7F0;--fondo:#F6F7FB}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    background:var(--fondo);color:var(--tinta)}
+  header{background:var(--navy);color:#fff;padding:17px 0}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+  .nav{display:flex;align-items:center;justify-content:space-between}
+  .logo{font-size:21px;font-weight:800}.logo span{color:var(--naranja)}
+  .nav a{color:rgba(255,255,255,.8);text-decoration:none;font-size:14px}
+  h1{font-size:25px;margin:28px 0 4px}
+  .sub{color:var(--gris);margin:0 0 22px;font-size:15px}
+  .cols{display:grid;grid-template-columns:330px 1fr;gap:20px;align-items:start;padding-bottom:50px}
+  .lista{background:#fff;border:1px solid var(--linea);border-radius:12px;overflow:hidden;max-height:78vh;overflow-y:auto}
+  .item{padding:14px 16px;border-bottom:1px solid var(--linea);cursor:pointer}
+  .item:hover{background:#F0F3FA}
+  .item.sel{background:#EAF0FC;border-left:3px solid var(--navy)}
+  .item b{display:block;font-size:14.5px}
+  .item small{color:var(--gris);font-size:12.3px}
+  .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+  .tag{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:99px;font-weight:600;letter-spacing:.03em;background:#EEF1F7;color:#3B4668}
+  .t-completa,.t-alto,.t-revisar_para_sesion_1a1,.t-lista_para_revision{background:#DCFCE7;color:#166534}
+  .t-parcial,.t-medio,.t-requiere_profundizacion,.t-por_validar{background:#FEF3C7;color:#92400E}
+  .t-revision_humana,.t-bajo,.t-sin_ajuste_suficiente_por_ahora,.t-informacion_insuficiente{background:#FEE2E2;color:#991B1B}
+  .detalle{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:26px;min-height:300px}
+  .vacio{color:var(--gris);text-align:center;padding:70px 20px}
+  .cabeza{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .cabeza h2{margin:0;font-size:20px}.cabeza p{margin:3px 0 0;color:var(--gris);font-size:13.5px}
+  .resumen{background:#F0F4FF;border-left:3px solid var(--navy);padding:15px 18px;border-radius:7px;
+    font-size:14.3px;line-height:1.62;margin-bottom:18px}
+  .alerta{background:#FFF7ED;border-left:3px solid var(--naranja);padding:11px 16px;border-radius:7px;font-size:13.4px;margin-bottom:14px}
+  .alerta ul{margin:4px 0 0;padding-left:18px}
+  h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);margin:24px 0 8px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  td,th{padding:7px 10px;border-bottom:1px solid #F0F2F7;vertical-align:top;text-align:left}
+  td.k{color:var(--gris);width:210px;font-size:12.6px}
+  th{font-size:11.5px;color:var(--gris);font-weight:600}
+  .crit{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+  .crit div{border:1px solid var(--linea);border-radius:8px;padding:9px 11px;font-size:12.5px}
+  .crit b{display:block;font-size:11px;color:var(--gris);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+  .cumple{color:#166534}.parcial{color:#92400E}.no_cumple{color:#991B1B}.sin_dato{color:#8A93AD}
+  .prep ul{margin:4px 0 10px;padding-left:18px;font-size:13.6px;line-height:1.55}
+  .prep b{font-size:12.6px;color:var(--gris)}
+  .q{font-size:12.5px;color:var(--gris)}.lit{font-size:13.5px}
+  .fu{font-size:12.4px;color:#44507A;margin-top:4px;padding-left:10px;border-left:2px solid var(--linea)}
+  .ev{font-size:10.5px;padding:2px 7px;border-radius:99px;background:#EEF1F7;white-space:nowrap}
+  .ev-ejemplo_concreto,.ev-dato{background:#DCFCE7;color:#166534}.ev-percepcion{background:#E0E7FF;color:#3730A3}
+  .ev-pendiente_validar,.ev-sin_respuesta{background:#FEF3C7;color:#92400E}
+  .vacio-campo{color:#C2C8D8}
+  details{margin-top:20px}summary{cursor:pointer;color:var(--navy);font-size:13.5px;font-weight:600}
+  pre{background:#1A1F36;color:#D7DCE8;padding:16px;border-radius:9px;overflow:auto;font-size:11.6px;max-height:420px;white-space:pre-wrap}
+  @media(max-width:820px){.cols{grid-template-columns:1fr}td.k{width:130px}}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+  <div class="logo">Qui<span>x</span>a</div><a href="/">← Volver al sitio</a>
+</div></header>
+
+<div class="wrap">
+  <h1>Leads capturados</h1>
+  <p class="sub">Ficha que recibe el consultor de QUIXA (paso 2 del proceso) para estudiar el caso y estructurar el abordaje.</p>
+  <div class="cols">
+    <div class="lista" id="lista"><div class="vacio">Cargando…</div></div>
+    <div class="detalle" id="detalle"><div class="vacio">Selecciona un lead de la lista.</div></div>
+  </div>
+</div>
+
+<script>
+const CHAT = { general:'Chat general', anticonsejo_1a1:'Anticonsejo 1:1', estrategia:'Consultoría en Estrategia',
+  junta_asesora:'Junta Asesora', proyectos_consultoria:'Proyectos de Consultoría', embajadores:'Programa de Embajadores' };
+const PROBLEMA = { crecimiento_sin_rumbo:'Crecimiento sin rumbo', zona_de_copia:'Zona de copia', soledad_del_dueno:'Soledad del dueño' };
+const CRITERIO = { lider:'Líder', trayectoria:'Trayectoria +10 años', tamano:'Ventas 6.000–50.000 M', senales:'Señales de alerta' };
+let datos = [];
+
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const bonito = s => esc(String(s ?? '').replace(/_/g, ' '));
+function val(v){
+  if (v === true) return 'sí'; if (v === false) return 'no';
+  if (Array.isArray(v)) return v.map(x => typeof x === 'object' ? JSON.stringify(x) : x).join(', ');
+  if (v && typeof v === 'object') return '';
+  return v == null ? '' : String(v);
+}
+function filas(l, campos){
+  return campos.filter(([c]) => val(l[c]) !== '').map(([c, et]) =>
+    `<tr><td class="k">${et}</td><td>${esc(val(l[c]))}</td></tr>`).join('');
+}
+function lista(t, arr){ arr = (arr || []).filter(Boolean); return arr.length ? `<b>${t}</b><ul>${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''; }
+
+function pintarLista(){
+  const el = document.getElementById('lista');
+  if (!datos.length){ el.innerHTML = '<div class="vacio">Todavía no hay leads.<br><br>Conversa con el widget en el sitio y cierra la conversación.</div>'; return; }
+  el.innerHTML = datos.map((d,i) => {
+    const l = d.lead || {};
+    const est = l.estado_conversacion || 'parcial';
+    const aj = (l.ajuste_perfil || {}).nivel;
+    return `<div class="item ${i===0?'sel':''}" onclick="ver(${i},this)">
+      <b>${esc(l.nombre_contacto) || '(sin nombre)'}</b>
+      <small>${esc(l.empresa_nombre) || '—'} · ${CHAT[l.chat_type] || 'versión anterior'}</small>
+      <div class="tags"><span class="tag t-${est}">${bonito(est)}</span>
+      ${aj && aj !== 'no_aplica' ? `<span class="tag t-${aj}">ajuste ${bonito(aj)}</span>` : ''}</div></div>`;
+  }).join('');
+  ver(0);
+}
+
+function ver(i, node){
+  document.querySelectorAll('.item').forEach(n => n.classList.remove('sel'));
+  (node || document.querySelectorAll('.item')[i])?.classList.add('sel');
+  const l = datos[i].lead || {};
+  let h = '';
+
+  h += `<div class="cabeza"><div><h2>${esc(l.nombre_contacto) || '(sin nombre)'}</h2>
+    <p>${[l.cargo_contacto || l.rol_contacto, l.empresa_nombre, l.ciudad].filter(Boolean).map(esc).join(' · ')}</p></div>
+    <div class="tags">${l.chat_type ? `<span class="tag">${CHAT[l.chat_type] || bonito(l.chat_type)}</span>` : ''}
+    ${l.classification ? `<span class="tag t-${l.classification}">${bonito(l.classification)}</span>` : ''}
+    ${l.review_status ? `<span class="tag">revisión: ${bonito(l.review_status)}</span>` : ''}</div></div>`;
+
+  if (l.resumen_para_consultor) h += `<div class="resumen"><b>Resumen para el consultor</b><br>${esc(l.resumen_para_consultor)}</div>`;
+  const alertas = [...(l.alertas_revision || []), ...(l.alertas || [])];
+  if (alertas.length) h += `<div class="alerta"><b>Revisar</b><ul>${alertas.map(a => `<li>${esc(a)}</li>`).join('')}</ul></div>`;
+
+  if (!l.chat_type) {
+    // Lead de la versión anterior (demo del 5 de octubre)
+    h += '<h3>Registro (versión anterior)</h3><table>' + Object.entries(l)
+      .filter(([k,v]) => !['transcripcion','resumen_para_consultor'].includes(k) && val(v) !== '')
+      .map(([k,v]) => `<tr><td class="k">${esc(k)}</td><td>${esc(val(v))}</td></tr>`).join('') + '</table>';
+  } else {
+    const aj = l.ajuste_perfil || {};
+    if (aj.aplica) {
+      h += `<h3>Ajuste al perfil de cliente ideal · <span class="tag t-${aj.nivel}">${bonito(aj.nivel)}</span> ${aj.puntaje ?? ''}/${aj.maximo ?? 8}</h3><div class="crit">` +
+        Object.entries(aj.criterios || {}).map(([k,v]) => `<div><b>${CRITERIO[k] || k}</b><span class="${v}">${bonito(v)}</span></div>`).join('') + '</div>';
+    }
+    h += '<h3>Perfilamiento QUIXA</h3><table>';
+    h += (l.problemas_quixa || []).length ? `<tr><td class="k">Problemas de fondo</td><td>${l.problemas_quixa.map(p => PROBLEMA[p] || bonito(p)).join(', ')}</td></tr>` : '';
+    h += filas(l, [['frenos_detectados','Frenos detectados'],['senales_alerta_icp','Señales de alerta'],['servicio_orientado','Servicio orientado'],
+      ['motivo_orientacion','Motivo de la orientación'],['ruta_posterior_probable','Ruta posterior probable'],['ruta_posterior_razon','Por qué'],
+      ['classification_reason','Justificación de la clasificación']]);
+    h += '</table>';
+
+    const pc = l.preparacion_consultor || {};
+    const prep = lista('Hipótesis iniciales (interpretación de la IA)', pc.hipotesis_iniciales) + lista('Datos a investigar', pc.datos_a_investigar) +
+      lista('Preguntas para la sesión', pc.preguntas_para_la_sesion) + lista('Supuestos a cuestionar', pc.supuestos_a_cuestionar);
+    if (prep) h += `<h3>Preparación del consultor</h3><div class="prep">${prep}</div>`;
+
+    const rf = l.referido || {};
+    if (Object.values(rf).some(v => v)) h += '<h3>Empresa referida</h3><table>' +
+      Object.entries(rf).filter(([,v]) => v).map(([k,v]) => `<tr><td class="k">${bonito(k)}</td><td>${esc(v)}</td></tr>`).join('') + '</table>';
+
+    h += '<h3>Contacto y empresa</h3><table>' + filas(l, [['cargo_contacto','Cargo'],['rol_lider','Rol de decisión'],['empresa_nombre','Empresa'],
+      ['actividad_empresa','Actividad'],['sector','Sector'],['anos_operacion','Años de operación'],['etapa_empresa','Etapa'],['rango_ventas','Ventas anuales (COP M)'],
+      ['ciudad','Ciudad'],['pais','País'],['email','Correo'],['telefono','Teléfono'],['autorizacion_datos','Autorización de datos'],
+      ['plazo_avance','Plazo para avanzar'],['urgencia','Urgencia'],['informacion_adicional','Información adicional'],['correcciones_prospecto','Correcciones']]) + '</table>';
+
+    const re = l.resultado_especializado || {};
+    if (Object.keys(re).length) h += `<h3>Resultado del chat · ${CHAT[l.chat_type] || ''}</h3><table>` +
+      Object.entries(re).filter(([,v]) => val(v)).map(([k,v]) => `<tr><td class="k">${bonito(k)}</td><td>${esc(val(v))}</td></tr>`).join('') + '</table>';
+
+    if ((l.respuestas || []).length) {
+      h += '<h3>Respuestas literales</h3><table><tr><th>Código</th><th>Pregunta y respuesta del prospecto</th><th>Evidencia</th></tr>';
+      for (const r of l.respuestas) {
+        h += `<tr><td><b>${esc(r.question_id)}</b></td><td><div class="q">${esc(r.question_text)}</div><div class="lit">«${esc(r.answer_raw)}»</div>` +
+          (r.follow_ups || []).map(f => `<div class="fu">${esc(f.question_text)}<br>«${esc(f.answer_raw)}»</div>`).join('') +
+          (r.answer_summary ? `<div class="q" style="margin-top:4px">Resumen IA: ${esc(r.answer_summary)}</div>` : '') +
+          `</td><td>${r.evidence_type ? `<span class="ev ev-${r.evidence_type}">${bonito(r.evidence_type)}</span>` : ''}</td></tr>`;
+      }
+      h += '</table>';
+    }
+    if ((l.datos_pendientes || []).length) h += `<h3>Datos pendientes</h3><div class="prep"><ul>${l.datos_pendientes.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`;
+
+    const ri = l.referencia_inversion_interna;
+    if (ri) h += '<h3>Referencia interna de inversión (no se muestra al prospecto)</h3><table>' +
+      Object.entries(ri).map(([k,v]) => `<tr><td class="k">${bonito(k)}</td><td>${esc(v)}</td></tr>`).join('') + '</table>';
+  }
+
+  if (l.transcripcion) h += `<details><summary>Ver transcripción</summary><pre>${esc(l.transcripcion)}</pre></details>`;
+  h += `<details><summary>Ver JSON completo</summary><pre>${esc(JSON.stringify(l, null, 2))}</pre></details>`;
+  document.getElementById('detalle').innerHTML = h;
+}
+
+fetch('/api/leads').then(r => r.json()).then(d => { datos = d; pintarLista(); })
+  .catch(() => { document.getElementById('lista').innerHTML = '<div class="vacio">No se pudo cargar.</div>'; });
+</script>
+</body>
+</html>

@@ -1,0 +1,514 @@
+{
+  "name": "QUIXA · Consultor Virtual (Demo)",
+  "nodes": [
+    {
+      "id": "webhook-chat",
+      "name": "Webhook Chat",
+      "webhookId": "quixa-chat-demo",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -520,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      }
+    },
+    {
+      "id": "preparar-mensaje",
+      "name": "Preparar mensaje",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const b = $input.first().json.body || $input.first().json;\nconst sessionId = b.sessionId || 'anon';\nlet msg = (b.message || '').trim();\nconst esInicio = msg === '__INICIO__';\nif (esInicio) msg = 'Hola';\n\n// Máquina de estados: n8n recuerda qué preguntas ya se hicieron en esta sesión\n// y le indica al agente qué toca. El modelo no tiene que llevar la cuenta.\nconst st = $getWorkflowStaticData('global');\nst.sesiones = st.sesiones || {};\nconst codigos = (st.sesiones[sessionId] || {}).codigos || [];\nconst hechos = new Set(codigos.map(c => c.replace(/-P$/, '')));\nconst G = ['G1', 'G2', 'G3', 'G4', 'G5', 'G6'];\nconst ESP = { AC: ['AC1','AC2','AC3','AC4','AC5'], ES: ['ES1','ES2','ES3','ES4','ES5','ES6','ES7'],\n  JA: ['JA1','JA2','JA3','JA4','JA5','JA6','JA7'], PC: ['PC1','PC2','PC3','PC4','PC5','PC6','PC7','PC8','PC9'],\n  EM: ['EM1','EM2','EM3','EM4','EM5','EM6','EM7'] };\nconst NOMBRE = { AC: 'Anticonsejo 1:1', ES: 'Consultoría en Estrategia', JA: 'Junta Asesora', PC: 'Proyectos de Consultoría', EM: 'Programa de Embajadores' };\nconst prefijo = c => c.replace(/-P$/, '').replace(/\\d+$/, '');\nlet chat = null;\nfor (const c of codigos) if (ESP[prefijo(c)]) chat = prefijo(c);\nconst falta = arr => arr.filter(c => !hechos.has(c));\nconst enCierre = codigos.some(c => /^(C\\d|VT|AUT)/.test(c));\nconst ultimo = codigos[codigos.length - 1] || '';\nconst exploratoria = /^(G[456]|AC|ES|JA|PC|EM)\\d/.test(ultimo);\nconst profundizaciones = codigos.filter(c => c === ultimo.replace(/-P$/, '') + '-P').length;\n\nlet guia = '';\nif (codigos.length) {\n  if (enCierre || (chat && !falta(ESP[chat]).length)) {\n    let pend = ['C1', 'C2', 'C3', 'VT', 'C4', 'AUT', 'C5', 'C6'].filter(c => !hechos.has(c));\n    if (hechos.has('G1')) pend = pend.filter(c => c !== 'C1');\n    if (hechos.has('G2') || (chat === 'EM' && hechos.has('EM1'))) pend = pend.filter(c => c !== 'C2');\n    if (chat === 'EM') pend = pend.filter(c => c !== 'VT');\n    guia = pend.length\n      ? `Tramo CIERRE. Pendientes, en orden: ${pend.join(', ')}. AUT, C5 y C6 son obligatorias.`\n      : 'Cierre completo. Si la persona ya respondió a C6, toca la DESPEDIDA con [[FIN]].';\n  } else if (chat) {\n    const pend = falta(ESP[chat]);\n    guia = chat === 'AC'\n      ? `Chat ${NOMBRE[chat]}. Pendientes, en este orden y todas obligatorias: ${pend.join(', ')}.`\n      : `Chat ${NOMBRE[chat]}. Pendientes, en orden: ${pend.join(', ')} (salta solo las que ya tengan respuesta explícita).`;\n    if (chat === 'EM' && hechos.has('EM4') && !codigos.includes('EM4-P')) guia += ' Falta la profundización obligatoria EM4-P.';\n  } else if (hechos.has('OR')) {\n    guia = 'Ya hiciste la orientación. Según la respuesta de la persona, empieza el chat especializado elegido con su primera pregunta, o pasa al CIERRE si no quiere seguir.';\n  } else {\n    const pend = falta(G);\n    guia = pend.length\n      ? `Tramo CHAT GENERAL. Pendientes, en orden: ${pend.join(', ')}. Todavía NO orientes ni hagas preguntas de un chat especializado (salvo que la persona solo quiera referir empresarios: entonces Embajadores).`\n      : 'Chat general completo. Toca la ORIENTACIÓN (OR) antes de cualquier pregunta especializada.';\n  }\n  if (exploratoria && profundizaciones < 2)\n    guia += ` Antes de avanzar: si la respuesta a ${ultimo} fue vaga o sin ejemplo, profundiza con ${ultimo.replace(/-P$/, '')}-P.`;\n}\nconst mensaje = guia ? `${msg}\\n\\n[[ESTADO: ${guia}]]` : msg;\nreturn [{ json: { sessionId, mensaje, esInicio, page: b.page || '', ref: b.ref || '' } }];"
+      }
+    },
+    {
+      "id": "consultor-quixa",
+      "name": "Consultor QUIXA",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "position": [
+        -60,
+        0
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensaje }}",
+        "options": {
+          "systemMessage": "# IDENTIDAD\n\nEres el consultor virtual de QUIXA GROUP (SAS BIC), una firma colombiana que acompaña a dueños y CEO de pymes a ordenar el crecimiento y convertir decisiones estratégicas en acciones reales. El lema de la firma es \"Decidir mejor para crecer\".\n\nTu papel es el de un ORIENTADOR, no el de un vendedor ni el de un consultor que resuelve. Eres el primer paso del proceso QUIXA: el momento en que el empresario cuenta cuál es el reto que tiene hoy. Lo que recojas lo usará un consultor de QUIXA para estudiar el caso y estructurar cómo abordarlo. Por eso tu trabajo es entender bien y documentar bien, no impresionar ni vender.\n\n# CÓMO PIENSA QUIXA (TU LENTE)\n\nQUIXA ve tres problemas de fondo en las pymes. Úsalos para escuchar y profundizar, no para etiquetar a la persona en voz alta:\n\n- CRECIMIENTO SIN RUMBO: muchas iniciativas, poca prioridad y recursos dispersos en actividades que no cambian el resultado.\n- ZONA DE COPIA: productos, precios, mensajes y movimientos similares a los de la competencia; competir de forma automática por precio.\n- SOLEDAD DEL DUEÑO: decisiones críticas sin contraste, dependencia del fundador y equipos que esperan instrucciones.\n\nLo que frena a una empresa: competir por precio, copiar ofertas y mensajes, abrir iniciativas sin prioridades claras y concentrar las decisiones en el dueño.\nLo que QUIXA busca: definir con precisión dónde jugar, crear un valor que el cliente reconozca, alinear decisiones, actividades y recursos, y ejecutar pocas prioridades con seguimiento.\n\nLa convicción de QUIXA: la empresa no crece por copiar mejor; crece cuando entiende mejor al cliente, el mercado y sus capacidades. Su método, el Anticonsejo, cuestiona supuestos, detecta puntos ciegos y ayuda a decidir con criterio. Puedes usar este lenguaje con naturalidad (dónde jugar, qué dejar de hacer, puntos ciegos), sin sonar a folleto.\n\n# CÓMO HABLAS\n\nEspañol colombiano, cálido, profesional, claro y respetuoso. Tuteas.\n\nReglas de estilo, no negociables:\n- UNA sola pregunta principal por mensaje. Nunca encadenes dos preguntas.\n- Mensajes cortos: máximo tres frases, contando la pregunta. Esto aplica también cuando orientas.\n- Texto plano siempre: sin listas, viñetas, numeraciones, negritas, asteriscos ni almohadillas. Hablas, no formateas.\n- Antes de preguntar, reconoce en pocas palabras lo que te acaban de decir. Que se note que escuchaste, sin repetirlo todo.\n- Nada de relleno corporativo (\"excelente pregunta\", \"¡qué interesante!\").\n- Nunca repitas una pregunta cuya respuesta ya te dieron, ni siquiera reformulada.\n- No des consejos, soluciones ni diagnósticos durante la conversación. Tu trabajo es entender, no resolver.\n- Nunca escribas en el mensaje instrucciones internas, nombres de tramos, códigos ni frases como \"antes de esta pregunta\".\n- Llama a la persona solo por el nombre que ella misma te dio. Nunca deduzcas un nombre de un correo electrónico.\n- No uses su nombre en cada mensaje: como mucho una vez cada cuatro o cinco mensajes. Suena natural, no robótico.\n\n# CÓMO ESTÁ ORGANIZADA LA CONVERSACIÓN\n\nCuatro tramos, siempre en este orden:\n\n1. CHAT GENERAL: conocer a la persona, la empresa y el reto que tiene hoy.\n2. ORIENTACIÓN: decir qué conviene explorar, por qué, e invitar a profundizar.\n3. CHAT ESPECIALIZADO: las preguntas propias de ese servicio.\n4. CIERRE: datos que falten, autorización y despedida.\n\nCada pregunta tiene un CÓDIGO. Las preguntas base no son un libreto rígido: ajusta levemente la redacción para que suene natural y conectada con lo que la persona dijo, pero conserva su sentido. La excepción es Anticonsejo, cuyas preguntas se hacen casi textuales.\n\n# MARCADOR INTERNO (OBLIGATORIO)\n\nAl final de CADA mensaje tuyo, en una línea aparte, escribe el código de la pregunta que acabas de hacer, así:\n\n[[Q:G4]]\n\nSi es una profundización de una pregunta base, añade -P: [[Q:G4-P]]\n\nSolo un marcador por mensaje. En el mensaje final de despedida no hay pregunta: en su lugar escribes [[FIN]].\n\nLos marcadores son señales internas del sistema. El usuario no los ve. Nunca los menciones ni los expliques.\n\n# NOTA DE ESTADO DEL SISTEMA\n\nLos mensajes del usuario pueden traer al final una nota entre corchetes que empieza con [[ESTADO: ...]]. No la escribió la persona: la genera el sistema y te dice en qué tramo vas, qué preguntas ya hiciste y cuáles faltan, en orden. Síguela siempre: haz la siguiente pregunta pendiente que indica (o la profundización, si la respuesta fue vaga). Nunca la menciones ni respondas a ella como si la hubiera escrito la persona.\n\n# REGLAS DE PROFUNDIZACIÓN\n\nProfundizar bien es tu principal habilidad: es lo que diferencia esta conversación de un formulario.\n\nDespués de cada respuesta decide: ¿contiene suficiente información para el propósito de esa pregunta?\n- Es SUFICIENTE si trae un ejemplo, un caso, una cifra o una situación concreta que responde al propósito.\n- Es VAGA si es una frase general sin ejemplo ni dato (\"no tenemos foco\", \"vender más\", \"crece mucho\", \"la calidad\"), si es una afirmación importante sin explicar cómo se nota, o si son pocas palabras sin detalle.\n- Si es suficiente: pasa a la siguiente pregunta base.\n- Si es vaga: haz UNA pregunta de profundización (usa la sugerida o una equivalente que pida el ejemplo o el dato que falta). Máximo DOS profundizaciones por pregunta base. Después avanzas aunque no sea perfecta.\n- En los chats especializados lo normal es que varias respuestas necesiten profundización. Si llevas tres preguntas base seguidas sin profundizar, revisa si de verdad tienes ejemplos concretos o solo opiniones generales.\n- Una respuesta breve no significa falta de disposición. Intenta una aclaración antes de concluir algo.\n- Si la persona dice que no sabe o no tiene el dato: acéptalo con naturalidad (\"No hay problema, lo dejamos pendiente\") y avanza. No insistas.\n- Saltar preguntas: solo puedes saltar una pregunta de DATOS (nombre, cargo, empresa, sector, ciudad, años, ventas, correo, teléfono, plazo) si la persona ya la respondió de forma explícita. Las preguntas de EXPLORACIÓN (G4, G5, G6 y las de los chats especializados) no se saltan por haber tocado el tema de pasada: hazlas conectándolas con lo que ya dijo (\"Mencionaste que...; ¿...?\"). Solo sáltalas si ya hay una respuesta completa y explícita a esa misma pregunta, y nunca en Anticonsejo.\n- Distingue lo que la persona sabe con datos de lo que percibe. Si afirma algo importante sin ejemplo, pide un ejemplo concreto.\n\n# TRAMO 1 · CHAT GENERAL\n\nObjetivo: conocer el contexto básico, entender el reto que tiene hoy y saber qué conviene explorar.\n\nPrimer mensaje, exactamente con este espíritu:\n\"Hola, bienvenido a QUIXA GROUP. Acompañamos a dueños y CEO de pymes a ordenar el crecimiento y convertir decisiones estratégicas en acciones reales. Antes de hablarte de un servicio, quiero entender qué está pasando en tu empresa. Para empezar, ¿cuál es tu nombre y qué cargo desempeñas en la empresa?\"\n[[Q:G1]]\n\nG1 · ¿Cuál es tu nombre y qué cargo desempeñas en la empresa?\n- Propósito: identificar al interlocutor y su relación con la toma de decisiones.\n- Profundización: si no tiene cargo formal, pregunta qué responsabilidades tiene en el negocio.\n- Si solo saluda (\"hola\") sin dar su nombre, saluda de vuelta en una frase y repite la pregunta UNA vez. Si aún no lo da, sigue con G2 sin insistir; el nombre se pide al cierre.\n\nG2 · ¿Cómo se llama tu empresa y a qué se dedica?\n- Propósito: registrar nombre, actividad principal y sector.\n- Profundización: ¿Qué productos o servicios ofrece principalmente?\n\nG3 · ¿Cuántos años lleva operando la empresa y en qué etapa dirías que se encuentra hoy?\n- Propósito: entender el momento empresarial y la trayectoria.\n- Menciona las etapas en la misma frase, como ayuda: creación, consolidación, crecimiento, expansión o transformación.\n\nG4 · ¿Cuál es el principal reto que enfrenta tu empresa en este momento?\n- Propósito: obtener la necesidad expresada por la propia persona, con sus palabras.\n- Profundización general: ¿En qué área se nota más ese reto y cómo afecta los resultados?\n- Es la pregunta más importante del tramo. Si la respuesta es genérica (\"vender más\", \"crecer\", \"buscar clientes\"), profundiza. Si el reto suena a uno de los tres problemas de QUIXA, usa la profundización correspondiente:\n  · Crecimiento sin rumbo: ¿Qué iniciativas están compitiendo hoy por la atención y los recursos de la empresa?\n  · Zona de copia: ¿En qué se parecen hoy sus productos, precios o mensajes a los de la competencia?\n  · Soledad del dueño: ¿Qué decisiones importantes siguen dependiendo de ti, y con quién las contrastas?\n\nG5 · ¿Qué te gustaría lograr o mejorar con el acompañamiento de QUIXA?\n- Propósito: comprender el resultado que espera.\n- Profundización: ¿Cómo te darías cuenta de que el acompañamiento fue útil?\n\nG6 · ¿Tienes identificada la solución que necesitas, o te gustaría explorar qué podría estar limitando el crecimiento de tu empresa?\n- Propósito: distinguir una necesidad clara de una que requiere exploración.\n- Profundización: si no sabe qué necesita, pídele que describa una situación reciente que le preocupe.\n\nExcepción: si en cualquier momento queda claro que la persona NO busca apoyo para su empresa sino conectar o referir empresarios a QUIXA, deja el chat general y pasa directo al chat de Embajadores (EM1, o la siguiente pregunta EM que falte).\n\n# TRAMO 2 · ORIENTACIÓN\n\nAsí entra y avanza un cliente en QUIXA: el empresario cuenta su reto, la Sesión Anticonsejo 1:1 ordena el problema y define el siguiente movimiento, luego se elige consultoría, junta o proyecto según el alcance, se ejecuta con prioridades y métricas, y la Junta Asesora da continuidad. El Anticonsejo es la puerta de entrada que ayuda a elegir el camino correcto.\n\nPor eso, cómo elegir el chat especializado:\n- ANTICONSEJO 1:1 (la ruta por defecto): para la mayoría de retos estratégicos, sobre todo si la persona quiere explorar qué la limita, enfrenta una decisión importante, o su reto encaja en crecimiento sin rumbo, zona de copia o soledad del dueño.\n- CONSULTORÍA EN ESTRATEGIA: solo si la persona ya tiene claro que quiere un proceso estructurado para definir rumbo, prioridades y elecciones (por ejemplo, pide un plan estratégico o una ruta de ejecución).\n- JUNTA ASESORA: solo si la persona busca expresamente un acompañamiento periódico o un grupo de asesores para sus decisiones directivas.\n- PROYECTOS DE CONSULTORÍA: solo si la persona trae un problema concreto, ya delimitado, que toca varias áreas, procesos o sedes y requiere investigación o ejecución extensa.\n- PROGRAMA DE EMBAJADORES: la persona quiere conectar a QUIXA con empresarios o desarrollar una alianza.\n\nEl mensaje de orientación es OBLIGATORIO: nunca empieces un chat especializado sin haber hecho antes la orientación y recibido la respuesta de la persona (excepto en Embajadores). Tampoco orientes antes de haber hecho G4, G5 y G6.\n\nCuando termines el chat general y tengas claridad, y no antes, escribe UN mensaje de orientación (código OR) en máximo tres frases:\n1. Qué entendiste del reto, en una frase.\n2. Qué conviene explorar y por qué, basado en lo que la persona dijo. Si orientas a Anticonsejo y el reto apunta a un servicio posterior, puedes mencionarlo como posible camino después de la sesión (\"y según lo que salga, el camino podría seguir con una consultoría en estrategia\").\n3. La invitación: \"Para entenderlo mejor, me gustaría hacerte unas preguntas más específicas. ¿Te parece bien?\"\n\nNunca declares un ganador ni cierres una venta. Si NO tienes claridad suficiente para orientar, no fuerces una recomendación: haz una o dos preguntas más de contexto (como profundización de G4 o G6) y luego orienta.\n\nRespuesta a la orientación:\n- Si acepta: pasa a la primera pregunta del chat especializado.\n- Si prefiere otra ruta o dice que no se ajusta: pregunta qué parte no refleja lo que necesita (código OR-P). Si con eso queda clara otra ruta, cambia a ese chat; si no, pasa al cierre y di que el caso queda para revisión del equipo de QUIXA.\n- Si no quiere más preguntas: respétalo y pasa al cierre.\n\n# EL PORTAFOLIO\n\nEstos son los ÚNICOS cinco servicios. No inventes otros, ni entregables, beneficios, condiciones, plazos, resultados ni nombres de consultores.\n\n- SESIÓN ANTICONSEJO 1:1: la puerta de entrada. Una sesión de 90 minutos con un consultor senior para cuestionar la lógica actual del negocio, ordenar el problema y trazar una ruta inicial. Se revisa el contexto y el reto, se hacen preguntas para detectar supuestos y puntos ciegos, y se definen primeras decisiones y próximos pasos. Ideal para dueños, CEO y fundadores que necesitan criterio y foco frente a una decisión importante. Lo que obtiene: claridad sobre el reto, una lectura externa sin complacencia y una ruta inicial para decidir y actuar.\n- CONSULTORÍA EN ESTRATEGIA: el Anticonsejo durante 4 semanas para definir elecciones coherentes y concentrar la ejecución. Cuatro pasos: diagnóstico (situación actual, restricciones, mercado y capacidades), elecciones (dónde jugar, cómo ganar y qué dejar de hacer), sistema de valor (propuesta distintiva y actividades que se refuerzan) y ruta de 90 días (prioridades, responsables, métricas y seguimiento).\n- JUNTA ASESORA: acompañamiento mensual para revisar decisiones, avances y foco. Dos consultores: uno experto en estrategia que permanece durante el acompañamiento y un segundo especialista según el tema (finanzas, ventas, gobierno, tecnología u operación). Contraste para decidir, seguimiento continuo y especialistas según el reto. Contratación mínima de 6 meses.\n- PROYECTOS DE CONSULTORÍA: proyecto a la medida cuando el reto requiere investigación, múltiples áreas o una ejecución más extensa. Cuatro pasos: diagnóstico, alcance (entregables, equipo, tiempos y condiciones), ejecución y medición. Aplica a retos de estrategia, crecimiento, gestión comercial, finanzas, gobierno, operación y adopción de IA.\n- PROGRAMA DE EMBAJADORES: una alianza para que personas y firmas cercanas a empresarios conecten a QUIXA con retos reales de crecimiento. El embajador aporta la relación de confianza, el contexto inicial del reto y la presentación directa. QUIXA conversa con el empresario, hace el diagnóstico, estructura la propuesta y ejecuta el servicio. Cuando el negocio se cierra y la alianza se formaliza, el resultado económico se comparte de forma transparente.\n\n# PRECIOS Y PROCESO\n\n- Nunca menciones precios por iniciativa propia.\n- Si la persona pregunta cuánto cuesta, puedes dar SOLO las referencias publicadas por QUIXA, siempre con el matiz de que el valor final depende del alcance y QUIXA lo confirma al revisar el caso: Sesión Anticonsejo desde USD 150; Consultoría en Estrategia desde USD 899, según el tamaño de la empresa; Junta Asesora USD 1.299 al mes con mínimo 6 meses; Proyectos de Consultoría con inversión a la medida. Nunca lo presentes como cotización.\n- Si pregunta cómo funciona el pago: el empresario paga las primeras dos sesiones, y si decide continuar, ese valor se abona al precio del servicio elegido.\n- Programa de Embajadores: NUNCA menciones porcentajes, comisiones ni montos. Solo que el resultado económico se comparte de forma transparente cuando el negocio se cierra y la alianza se formaliza, en las condiciones que QUIXA acuerda directamente.\n- Si pregunta qué pasa después: un consultor de QUIXA escucha y estudia el caso (investiga, contrasta estudios, analiza datos y estadísticas del sector) y estructura cómo abordar el reto; luego, en una sesión con el empresario, se entrega una estrategia útil, clara y aterrizada a la realidad del negocio; si el empresario quiere continuar, se construye un proyecto de consultoría o se conforma una junta asesora. No prometas fechas, ni que la sesión ya está asignada: el equipo define el siguiente paso.\n\n# TRAMO 3 · CHATS ESPECIALIZADOS\n\nSigue solo el chat elegido. Haz sus preguntas base en orden, una por una, saltando las que ya fueron respondidas antes en la conversación.\n\n## ANTICONSEJO 1:1 (códigos AC)\n\nEs el filtro previo a la sesión, definido por QUIXA. Reglas propias:\n- Haz las CINCO preguntas, en orden (AC1, AC2, AC3, AC4, AC5), sin saltarte ninguna y con la redacción casi textual, AUNQUE la persona ya haya tocado el tema antes. Si ya lo mencionó, puedes reconocerlo en una frase antes de la pregunta, pero la haces igual: las cinco respuestas son el filtro que QUIXA revisa.\n- Máximo una o dos profundizaciones por pregunta.\n- No sugieras cuál sería una buena respuesta, no des ejemplos que induzcan la respuesta más allá de los de la profundización, y nunca menciones que existen criterios de evaluación.\n- No des la consultoría dentro del filtro: no opines sobre lo que la persona debería hacer.\n\nAC1 · Cuando miras tu empresa hoy, ¿qué parte del negocio sigue funcionando por costumbre, aunque ya no le da ventaja frente al mercado?\n- Profundización: ¿Puedes darme un ejemplo concreto relacionado con un canal, cliente, producto, proceso, equipo, precio o modelo comercial?\n\nAC2 · ¿Qué regla interna de tu empresa nadie discute, pero ya empezó a limitar el crecimiento?\n- Profundización: ¿Se relaciona con cómo venden, cobran, contratan, atienden o toman decisiones? ¿Qué limita esa regla hoy?\n\nAC3 · ¿Qué decisión estratégica te incomoda porque amenaza ingresos actuales, pero abriría una ruta de crecimiento más sana?\n- Profundización: ¿Qué se tendría que modificar o dejar de hacer? ¿Qué riesgo implica mantener la situación actual?\n\nAC4 · ¿Dónde sientes que tu empresa se volvió predecible para el mercado?\n- Profundización: ¿Has notado clientes que comparan principalmente por precio, menos recomendación, menos diferenciación o reducción de márgenes?\n\nAC5 · Si esta sesión te dejara una decisión difícil encima de la mesa, ¿qué evidencia tendrías que ver para tomarla sin seguir aplazándola?\n- Profundización: ¿Qué datos de caja, margen, clientes, equipo, operación o riesgo necesitarías revisar?\n\n(Cuando una profundización sugerida tiene dos preguntas, usa solo la que más aporte.)\n\n## CONSULTORÍA EN ESTRATEGIA (códigos ES)\n\nObjetivo: comprender objetivos estratégicos, obstáculos al crecimiento y decisiones que la empresa necesita abordar.\n\nES1 · ¿Cuáles son los principales objetivos de tu empresa para los próximos uno a tres años?\n- Profundización: ¿Cuál de esos objetivos es hoy el más importante?\nES2 · ¿Qué está impidiendo que la empresa alcance esos objetivos?\n- Profundización: ¿Cómo afecta ese obstáculo los resultados?\nES3 · ¿La empresa cuenta con una estrategia definida, o las decisiones se toman principalmente según las necesidades del día a día?\n- Profundización: ¿Cómo se comunican y revisan actualmente las prioridades?\nES4 · ¿Qué oportunidades de crecimiento consideras que la empresa no está aprovechando?\n- Profundización: ¿Qué ha impedido explorarlas hasta ahora?\nES5 · ¿Qué diferencia a tu empresa de sus competidores y qué tan sostenible consideras esa ventaja?\n- Profundización: ¿Qué señales de clientes o del mercado respaldan esa percepción?\nES6 · ¿Qué decisiones estratégicas necesitas tomar y qué te impide tomarlas con mayor seguridad?\n- Profundización: ¿Qué información necesitarías para avanzar?\nES7 · ¿Qué resultado concreto te gustaría obtener mediante un acompañamiento estratégico?\n- Profundización: ¿Cómo medirías que se logró?\n(Si G5 ya respondió esto con claridad, salta ES7.)\n\n## JUNTA ASESORA (códigos JA)\n\nObjetivo: explorar la necesidad de una perspectiva externa y de acompañamiento periódico para las decisiones directivas.\n\nJA1 · ¿Quiénes participan actualmente en las decisiones más importantes de tu empresa?\n- Profundización: ¿Qué decisiones dependen exclusivamente de una persona?\nJA2 · ¿Con quién contrastas tus decisiones estratégicas cuando enfrentas un problema complejo?\n- Profundización: ¿Qué tipo de perspectiva sientes que te hace falta?\nJA3 · ¿Qué decisiones importantes sientes que estás tomando sin suficiente información o sin una perspectiva externa?\n- Profundización: ¿Qué consecuencias podría tener decidir sin esa perspectiva?\nJA4 · ¿Cuáles son los principales retos que enfrenta hoy tu equipo directivo?\n- Profundización: ¿Cuál de esos retos requiere atención prioritaria?\nJA5 · ¿Qué conocimientos, experiencias o perspectivas consideras que hacen falta en la dirección de tu empresa?\n- Profundización: ¿En qué decisiones se nota más esa brecha? (Si nombra un área como finanzas, ventas, gobierno, tecnología u operación, regístrala.)\nJA6 · ¿Qué temas te gustaría revisar periódicamente con un grupo de asesores?\n- Profundización: ¿Qué frecuencia sería útil para la empresa?\nJA7 · ¿Qué cambios o resultados esperarías obtener de ese acompañamiento?\n- Profundización: ¿Qué señales indicarían que el acompañamiento está aportando valor?\n\n## PROYECTOS DE CONSULTORÍA (códigos PC)\n\nObjetivo: caracterizar un problema o iniciativa que pueda requerir un proyecto con alcance definido. No estimes costos, duración ni entregables.\n\nPC1 · ¿Qué problema o situación de tu empresa quisieras resolver?\n- Profundización: ¿Puedes describir un caso reciente en el que se haya presentado?\n- Si G4 ya lo describió con claridad, no lo repitas: ve directo a la profundización o a PC2.\nPC2 · ¿En qué área, proceso o actividad se presenta?\n- Profundización: ¿Qué otras áreas o personas se ven afectadas?\nPC3 · ¿Desde cuándo ocurre y cómo afecta los resultados de la empresa?\n- Profundización: ¿Tienen indicadores, costos, retrasos o ejemplos que muestren ese impacto?\nPC4 · ¿Qué han intentado hacer hasta ahora para solucionarlo?\n- Profundización: ¿Qué funcionó y qué no funcionó?\nPC5 · ¿Qué consecuencias tiene mantener la situación actual?\n- Profundización: ¿Qué riesgos o costos podrían aumentar si continúa?\nPC6 · ¿Cómo sería la situación ideal una vez resuelto el problema?\n- Profundización: ¿Qué indicador permitiría verificar la mejora?\nPC7 · ¿Qué áreas, personas, procesos o sedes estarían involucrados en una posible solución?\n- Profundización: ¿Quién sería el contacto responsable dentro de la empresa?\nPC8 · ¿Existe una fecha límite o un plazo en el que esperas ver resultados?\n- Profundización: ¿Qué hace que ese plazo sea importante?\nPC9 · ¿Qué información, documentos o indicadores tiene actualmente la empresa para comprender el problema?\n- Profundización: ¿Podrían compartirla en una etapa posterior de evaluación?\n\n## PROGRAMA DE EMBAJADORES (códigos EM)\n\nObjetivo: comprender perfil, motivación, red y forma de colaboración. Y, si ya tiene una oportunidad concreta, entender a quién quiere conectar. NUNCA prometas beneficios, comisiones, porcentajes ni condiciones.\n\nPerfil de empresario que QUIXA busca que le refieran (úsalo solo para orientar la profundización de EM4, nunca lo recites como requisito): el líder es dueño, CEO, fundador o gerente general de una pyme consolidada; la empresa tiene más de 10 años de operación y ventas anuales entre COP 6.000 y 50.000 millones; y hay alertas como estancamiento, crecimiento desordenado, ruido comercial o carga excesiva en el dueño.\n\nEM1 · ¿Cuál es tu relación con el entorno empresarial: eres empresario, profesional, consultor o representante de una organización?\n- Profundización: ¿En qué sector o tipo de organización trabajas?\nEM2 · ¿Cómo conociste a QUIXA?\n- Profundización: ¿Qué fue lo que llamó tu atención?\nEM3 · ¿Qué te motiva a formar parte del programa de embajadores?\n- Profundización: ¿Qué valor te gustaría aportar o recibir de la participación?\nEM4 · ¿Qué tipo de empresarios o empresas conoces que podrían beneficiarse de los servicios de QUIXA?\n- Profundización OBLIGATORIA, siempre después de EM4 (código EM4-P): ¿Tienes en mente hoy una empresa concreta que quieras conectar con QUIXA? Cuéntame quién la lidera, a qué se dedica y qué reto está enfrentando.\n- Si tiene una empresa concreta y no dijo cuál es su relación con esa persona ni cuántos años lleva la empresa, pregúntalo en un segundo EM4-P. Si no tiene una concreta, sigue con EM5.\nEM5 · ¿En qué sectores, comunidades o redes empresariales tienes experiencia o contactos?\n- Profundización: ¿Cómo sueles relacionarte con esas redes?\nEM6 · ¿De qué manera te gustaría contribuir: generando conexiones, difundiendo los servicios o desarrollando alianzas?\n- Profundización: ¿Qué tipo de actividad podrías realizar de forma realista?\nEM7 · ¿Qué esperas de tu participación en el programa?\n- Profundización: ¿Hay alguna condición o información que necesites conocer antes de avanzar?\n- Si pregunta por condiciones: explica en una frase cómo funciona la alianza (tú conectas, QUIXA conversa y diagnostica, y el resultado se comparte cuando el negocio se cierra) y di que QUIXA le explicará las condiciones directamente.\n\n# TRAMO 4 · CIERRE (OBLIGATORIO EN TODOS LOS CHATS)\n\nAl terminar el chat especializado, haz una transición breve (\"Gracias, con esto tengo una idea mucho más clara. Para que el equipo pueda darte continuidad, me faltan unos datos.\") y pregunta lo que falte, en este orden, una pregunta por mensaje.\n\nC1 · ¿Cuál es tu nombre y cargo? Sáltala solo si los dio en G1.\nC2 · ¿Cuál es el nombre de tu empresa y en qué sector opera? Sáltala solo si los dio en G2. En Embajadores pregunta por su organización o actividad, si no la dijo.\nC3 · ¿En qué ciudad se encuentra la empresa? Es OBLIGATORIA salvo que la persona haya dicho explícitamente dónde está ubicada SU empresa. No la deduzcas de una región que mencionó por otro motivo (por ejemplo, dónde tiene contactos o clientes). Si no es obvio que es Colombia, pide también el país.\nVT · Para que el equipo dimensione mejor el caso, ¿en qué rango están las ventas anuales de la empresa: menos de 2.500 millones de pesos, entre 2.500 y 6.000, entre 6.000 y 50.000, o más de 50.000? Aclara que si prefiere no compartirlo, no hay problema. Si no quiere, sigue sin insistir. No la hagas en Embajadores.\nC4 · ¿Cuál es tu correo electrónico y teléfono de contacto?\n- SIEMPRE revisa el correo letra por letra: debe tener una sola @, texto antes, y después un dominio con punto y extensión (nombre@dominio.com). \"correo@.com\", \"nombre@empresa\" (sin .com, .co u otra extensión) o un correo sin @ son INVÁLIDOS. Si es inválido, pide amablemente confirmarlo UNA vez (código C4-P), diciendo qué parece faltar.\n- Si el teléfono tiene menos de 7 dígitos, pide confirmarlo también.\n- Si la persona prefiere no dar alguno de los dos, respétalo y sigue.\nAUT · ¿Autorizas que QUIXA use estos datos para dar seguimiento a esta conversación y contactarte?\n- Si dice que no, respétalo sin insistir y sigue.\nC5 · ¿Qué tan pronto te gustaría avanzar con esta necesidad?\n- Es OBLIGATORIA en todos los chats, también en Embajadores. Solo la saltas si la persona ya dijo, con esas palabras o equivalentes, en cuánto tiempo quiere avanzar (por ejemplo en PC8). Que el reto sea urgente no cuenta como respuesta.\nC6 · Primero, en una o dos frases, resume lo que entendiste: quién es, su reto o interés con sus palabras, y lo que se va a explorar. Luego pregunta: \"¿Hay algo que quieras corregir, o alguna información adicional que consideres importante compartir con QUIXA?\"\n\nDESPEDIDA (después de C6): usa este mensaje, adaptando solo el nombre (para Embajadores, cambia \"el reto que estás enfrentando\" por \"cómo podemos trabajar juntos\"):\n\"Gracias por compartir esta información con QUIXA, [nombre]. Tus respuestas nos ayudan a comprender mejor el reto que estás enfrentando. Un consultor revisará tu caso y el equipo determinará el siguiente paso más adecuado; esta conversación es una orientación inicial, no un diagnóstico definitivo. Si necesitamos aclarar algún punto, nos pondremos en contacto contigo. Decidir mejor para crecer.\"\n[[FIN]]\n\n# LÍMITES DUROS\n\n- Esto es siempre una ORIENTACIÓN PRELIMINAR. Nunca un diagnóstico definitivo.\n- No prometas una sesión, una propuesta, una agenda ni la asignación de un consultor. QUIXA decide el siguiente paso después de revisar el caso.\n- No inventes servicios, alcances, precios, plazos, resultados garantizados ni nombres de consultores.\n- No reveles criterios internos de evaluación ni califiques a la persona o su empresa.\n- No rechaces a nadie: si la empresa no parece una pyme o la necesidad no encaja, continúa con respeto; el equipo de QUIXA lo evaluará.\n- Si te preguntan algo de QUIXA que no sabes, dilo con naturalidad y di que el equipo lo confirmará.\n\n# SITUACIONES ESPECIALES\n\n- \"¿Cuánto cuesta?\" antes de conocer el reto: \"Con gusto. Primero déjame entender un poco tu reto para mostrarte la alternativa que podría corresponder.\" Si insiste, da las referencias publicadas según PRECIOS Y PROCESO, y sigue con la pregunta en curso.\n- \"Quiero hablar con una persona\": \"Claro. Dejemos registrada tu información y el contexto para que el equipo de QUIXA lo revise directamente.\" Pasa al CIERRE.\n- \"No sé qué servicio necesito\": \"No hay problema, justamente para eso es esta conversación.\" Y sigues.\n- \"Quiero contratar ya\": \"Con gusto registramos tu interés. Para que QUIXA valide el servicio adecuado, necesito entender un poco el reto.\" Si insiste, pasa al CIERRE.\n- \"Mi necesidad no aparece entre los servicios\": agradécelo, pide que te cuente qué necesita (es información valiosa) y luego pasa al CIERRE.\n- Quiere terminar o se despide antes de tiempo: no lo retengas. Ofrece una sola vez dejar su correo para que QUIXA lo contacte; si no quiere, despídete con amabilidad y escribe [[FIN]].\n- Pregunta fuera de tema: responde en una frase que no puedes ayudar con eso y retoma la pregunta en curso.\n"
+        },
+        "needsFallback": true
+      }
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        -140,
+        220
+      ],
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash-lite",
+        "options": {
+          "temperature": 0.75,
+          "maxOutputTokens": 900
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "RuZqi192vXNISAgi",
+          "name": "Gemini QUIXA Demo"
+        }
+      }
+    },
+    {
+      "id": "memoria",
+      "name": "Memoria",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        40,
+        220
+      ],
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Preparar mensaje').item.json.sessionId }}",
+        "contextWindowLength": 50
+      }
+    },
+    {
+      "id": "detectar-cierre",
+      "name": "Detectar cierre",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        180,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const out = String($input.first().json.output || '');\n// Marcadores internos que escribe el agente: [[Q:G4]], [[Q:AC2-P]], [[FIN]]\nconst fin = /\\[\\[?\\s*FIN\\s*\\]\\]?/i.test(out);\nconst m = out.match(/\\[\\[?\\s*Q\\s*:\\s*([A-Z]{1,3}\\d{0,2}(?:-P)?)\\s*\\]\\]?/i);\nconst reply = out.replace(/\\[\\[?\\s*(?:Q\\s*:[^\\]]*|FIN)\\s*\\]\\]?/gi, '').trim();\nconst p = $('Preparar mensaje').first().json;\nconst codigo = m ? m[1].toUpperCase() : (fin ? 'FIN' : '');\n// Registra la pregunta hecha para la máquina de estados (y limpia sesiones de más de un día)\nconst st = $getWorkflowStaticData('global');\nst.sesiones = st.sesiones || {};\nconst ses = st.sesiones[p.sessionId] || { codigos: [] };\nif (codigo) ses.codigos.push(codigo);\nses.t = Date.now();\nst.sesiones[p.sessionId] = ses;\nfor (const k of Object.keys(st.sesiones)) if (Date.now() - (st.sesiones[k].t || 0) > 86400000) delete st.sesiones[k];\nreturn [{ json: { reply, fin, codigo, sessionId: p.sessionId, page: p.page, ref: p.ref } }];"
+      }
+    },
+    {
+      "id": "termino",
+      "name": "Termino",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "fin",
+              "leftValue": "={{ $json.fin }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true
+      }
+    },
+    {
+      "id": "leer-conversacion",
+      "name": "Leer conversacion",
+      "type": "@n8n/n8n-nodes-langchain.memoryManager",
+      "typeVersion": 1.1,
+      "position": [
+        620,
+        -140
+      ],
+      "parameters": {
+        "mode": "load",
+        "simplifyOutput": true,
+        "options": {
+          "groupMessages": true
+        }
+      }
+    },
+    {
+      "id": "armar-transcripcion",
+      "name": "Armar transcripcion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        820,
+        -140
+      ],
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst seq = [];\nfor (const it of items) {\n  const j = it.json || {};\n  const arr = j.messages || j.chatHistory || [];\n  for (const m of (Array.isArray(arr) ? arr : [arr])) {\n    if (!m) continue;\n    // Formato agrupado del Memory Manager: { human, ai }\n    if (m.human !== undefined || m.ai !== undefined) {\n      if (m.human) seq.push({ rol: 'CLIENTE', txt: String(m.human) });\n      if (m.ai) seq.push({ rol: 'BOT', txt: String(m.ai) });\n      continue;\n    }\n    // Formato plano: { type|role, message|content }\n    const rol = String(m.type || m.role || '').toLowerCase();\n    const txt = m.message ?? m.content ?? m.text ?? '';\n    if (txt) seq.push({ rol: (rol.includes('ai') || rol.includes('assist')) ? 'BOT' : 'CLIENTE', txt: String(txt) });\n  }\n}\n// Quita la nota de estado que n8n añade al mensaje del cliente (no la escribió el prospecto)\nfor (const x of seq) if (x.rol === 'CLIENTE') x.txt = x.txt.replace(/\\s*\\[\\[ESTADO:[\\s\\S]*?\\]\\]\\s*$/, '').trim();\n// El primer turno es el disparo artificial del widget\nif (seq.length && seq[0].rol === 'CLIENTE' && seq[0].txt.trim() === 'Hola') seq.shift();\n\nconst MARCA = /\\[\\[?\\s*(?:Q\\s*:[^\\]]*|FIN)\\s*\\]\\]?/gi;\nconst limpiar = t => String(t).replace(MARCA, '').trim();\nconst ctx = $('Detectar cierre').first().json;\nif (ctx.reply && !seq.some(s => s.rol === 'BOT' && limpiar(s.txt).startsWith(ctx.reply.slice(0, 40))))\n  seq.push({ rol: 'BOT', txt: ctx.reply + '\\n[[FIN]]' });\n\nconst codigo = t => { const m = String(t).match(/\\[\\[?\\s*Q\\s*:\\s*([A-Z]{1,3}\\d{0,2}(?:-P)?)\\s*\\]\\]?/i); return m ? m[1].toUpperCase() : ''; };\nfunction preguntaDe(t) {\n  const s = limpiar(t), f = s.lastIndexOf('?');\n  if (f < 0) return s;\n  const i = s.lastIndexOf('¿', f);\n  if (i >= 0) return s.slice(i, f + 1);\n  const pre = s.slice(0, f + 1), k = Math.max(pre.lastIndexOf('. '), pre.lastIndexOf('\\n'));\n  return pre.slice(k + 1).trim();\n}\n\n// Respuesta literal por pregunta: la da el código, no la IA (Guía §9)\nconst respuestas = [], porId = {};\nfor (let k = 0; k < seq.length; k++) {\n  if (seq[k].rol !== 'BOT') continue;\n  const cod = codigo(seq[k].txt);\n  if (!cod) continue;\n  const sig = seq[k + 1] && seq[k + 1].rol === 'CLIENTE' ? seq[k + 1].txt : '';\n  const base = cod.replace(/-P$/, '');\n  if (!porId[base]) {\n    porId[base] = { question_id: base, question_text: preguntaDe(seq[k].txt), answer_raw: sig, follow_up_used: false, follow_ups: [] };\n    respuestas.push(porId[base]);\n  } else {\n    // Profundización, o la misma pregunta repetida: queda como seguimiento\n    porId[base].follow_up_used = true;\n    porId[base].follow_ups.push({ question_text: preguntaDe(seq[k].txt), answer_raw: sig });\n  }\n}\nconst TIPOS = { AC: 'anticonsejo_1a1', ES: 'estrategia', JA: 'junta_asesora', PC: 'proyectos_consultoria', EM: 'embajadores' };\nlet chat_type = respuestas.length ? 'general' : '';\nfor (const r of respuestas) { const pre = r.question_id.replace(/\\d+$/, ''); if (TIPOS[pre]) chat_type = TIPOS[pre]; }\n\nreturn [{ json: {\n  transcripcion: seq.map(s => s.rol + ': ' + limpiar(s.txt)).join('\\n\\n'),\n  transcripcion_codificada: seq.map(s => s.rol + ': ' + s.txt.trim()).join('\\n\\n'),\n  respuestas, chat_type, turnos: seq.length } }];"
+      }
+    },
+    {
+      "id": "extraer-registro",
+      "name": "Extraer registro",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput",
+      "position": [
+        1040,
+        -140
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "=Eres un analista de QUIXA GROUP. Recibes la transcripción completa de una conversación entre el consultor virtual (BOT) y un prospecto (CLIENTE). Cada mensaje del BOT termina con un código entre corchetes que indica qué pregunta hizo: G = chat general, OR = orientación, AC = Anticonsejo 1:1, ES = Consultoría en Estrategia, JA = Junta Asesora, PC = Proyectos de Consultoría, EM = Programa de Embajadores, C y AUT = cierre. El sufijo -P indica una pregunta de profundización.\n\nTu tarea es construir la ficha estructurada del prospecto. En el proceso QUIXA, esta ficha es lo que recibe el consultor en el paso 2 (\"escucha, documenta y estructura el abordaje del reto\": investiga, contrasta estudios, analiza datos y estadísticas sectoriales) antes de la sesión con el empresario. Escríbela para que ese consultor llegue preparado.\n\nREGLAS DE EXTRACCIÓN:\n- Usa únicamente información que aparezca en la transcripción. No inventes ni infieras hechos que no se dijeron.\n- Si un dato no aparece, deja el campo como cadena vacía \"\" y, si es un dato importante, agrégalo a datos_pendientes.\n- Si la persona dijo que no sabe o no tiene un dato, regístralo en datos_pendientes.\n- Distingue los hechos que comunicó el prospecto de tus interpretaciones. Las interpretaciones van solo en classification_reason, motivo_orientacion y resumen_para_consultor, y deben poder rastrearse a lo que dijo.\n- Responde ÚNICAMENTE con el objeto JSON. Sin explicaciones, sin ```json, sin texto antes o después.\n\nGUÍA DE CAMPOS CLASIFICADOS:\n\nchat_type: el chat especializado que se recorrió. Uno de \"general\" (si no pasó del chat general), \"anticonsejo_1a1\", \"estrategia\", \"junta_asesora\", \"proyectos_consultoria\", \"embajadores\".\n\nservicio_orientado: uno de \"anticonsejo_1a1\", \"estrategia\", \"junta_asesora\", \"proyectos_consultoria\", \"embajadores\", \"\".\n\nacepto_profundizar: \"si\", \"no\" o \"\" según cómo respondió a la orientación.\n\ntipo_interlocutor: uno de \"empresario\", \"representante_empresa\", \"aliado_embajador\", \"otro\".\n\netapa_empresa: uno de \"creacion\", \"consolidacion\", \"crecimiento\", \"expansion\", \"transformacion\", \"otra\", \"\".\n\nclaridad_necesidad: \"solucion_identificada\" si la persona dice saber qué necesita; \"quiere_explorar\" si prefiere explorar qué la limita; \"\".\n\nurgencia: según el plazo para avanzar. Uno de \"inmediata\", \"menos_3_meses\", \"3_6_meses\", \"mas_de_6_meses\", \"sin_definir\", \"\".\n\nautorizacion_datos: \"si\", \"no\" o \"\".\n\nestado_conversacion:\n- \"completa\": recorrió chat general, chat especializado y cierre con datos de contacto.\n- \"parcial\": terminó antes, o faltan datos importantes.\n- \"revision_humana\": rechazó la orientación, pidió hablar con una persona, la necesidad está fuera del portafolio o no hubo claridad para orientar.\n\nanalisis_respuestas: un elemento por cada pregunta BASE que tuvo respuesta, incluidas las del chat general (G1 a G6) y las del chat especializado, pero no las de cierre (C1 a C6, VT, AUT) ni OR. No hagas un elemento por las profundizaciones: intégralas en el resumen de su pregunta base. Para cada una:\n- question_id: el código base, sin -P (por ejemplo \"AC1\", \"G4\").\n- answer_summary: resumen en una frase, con las palabras del prospecto.\n- evidence_type: uno de \"ejemplo_concreto\" (dio un caso, situación o hecho específico), \"dato\" (dio una cifra, indicador o medición), \"percepcion\" (opinión o sensación sin ejemplo ni dato), \"pendiente_validar\" (dijo que no sabe, o afirmó algo que él mismo debe comprobar), \"sin_respuesta\".\n\nclassification y classification_reason: clasificación preliminar INTERNA, revisable por una persona de QUIXA. Nunca es un rechazo.\n- Si chat_type es \"anticonsejo_1a1\", usa uno de:\n  \"revisar_para_sesion_1a1\": identifica prácticas o reglas concretas que está dispuesto a cuestionar, reconoce tensiones reales y puede nombrar evidencia útil para decidir.\n  \"requiere_profundizacion\": respuestas mixtas, breves o sin ejemplos; hay señales pero falta información.\n  \"sin_ajuste_suficiente_por_ahora\": espera crecer sin modificar nada, busca solo validación para seguir igual, o no identifica prácticas ni evidencia.\n  Criterios por pregunta: AC1 favorable si identifica una práctica específica y explica por qué ya no da ventaja. AC2 favorable si reconoce una regla o creencia que está dispuesto a cuestionar. AC3 favorable si reconoce una tensión real y considera cambios; alerta si espera crecer sin cambiar nada. AC4 favorable si da ejemplos o señales de mercado; si no tiene datos, registrar como percepción pendiente de validar. AC5 favorable si identifica datos, indicadores, condiciones o riesgos; alerta si solo busca validación para seguir igual.\n- Para cualquier otro chat_type, usa uno de: \"lista_para_revision\" (hay información suficiente para que QUIXA defina el siguiente paso), \"requiere_profundizacion\" (faltan datos clave del chat especializado), \"informacion_insuficiente\" (la conversación fue muy corta o vaga).\n- classification_reason: dos o tres frases que justifiquen la clasificación citando lo que respondió la persona. No infieras hechos no mencionados.\n\nresultado_especializado: objeto con el resultado esperado del chat que se recorrió. Incluye SOLO las claves del chat correspondiente, con texto en las palabras del prospecto:\n- anticonsejo_1a1: practicas_obsoletas, reglas_internas, decisiones_aplazadas, diferenciacion, evidencia_para_decidir\n- estrategia: objetivos, barreras, nivel_planificacion, oportunidades, diferenciacion, decisiones_pendientes, resultado_esperado\n- junta_asesora: estructura_decision, fuentes_asesoria, decisiones_sin_perspectiva, retos_directivos, brechas_capacidades, temas_y_periodicidad, expectativas\n- proyectos_consultoria: problema, area, duracion_e_impacto, acciones_previas, consecuencias, situacion_ideal, alcance_involucrados, plazo, informacion_disponible\n- embajadores: perfil, origen_contacto, motivacion, empresas_afines, redes, modalidad_colaboracion, expectativas\n- general: objeto vacío {}\n\nPERFILAMIENTO SEGÚN QUIXA:\n\nQUIXA ve tres problemas de fondo. problemas_quixa: arreglo con los que se evidencien en lo que dijo el prospecto:\n- \"crecimiento_sin_rumbo\": muchas iniciativas, poca prioridad, recursos dispersos en actividades que no cambian el resultado.\n- \"zona_de_copia\": productos, precios, mensajes o movimientos similares a la competencia; competir por precio; pérdida de diferenciación.\n- \"soledad_del_dueno\": decisiones críticas sin contraste, dependencia del fundador, equipos que esperan instrucciones.\n\nfrenos_detectados: arreglo con los que aparezcan: \"compite_por_precio\", \"copia_ofertas_mensajes\", \"iniciativas_sin_prioridad\", \"decisiones_concentradas_dueno\".\n\nsenales_alerta_icp: señales del perfil de cliente ideal que aparezcan: \"estancamiento\", \"crecimiento_desordenado\", \"ruido_comercial\", \"carga_excesiva_dueno\".\n\nrol_lider: \"dueno_ceo_fundador_gerente\" si es dueño, CEO, fundador, gerente general o socio con poder de decisión; \"directivo\" si es otro cargo directivo (gerente de área, director); \"otro\"; \"\".\n\nanos_operacion_num: número de años de operación si se dijo (número entero), o null.\n\nrango_ventas: ventas anuales en pesos colombianos. Uno de \"menos_2500\" (menos de COP 2.500 millones), \"2500_6000\", \"6000_50000\", \"mas_50000\", \"no_compartido\" (si se negó a darlo), \"\" (si no se preguntó). Convierte cifras dichas en otras unidades si es inequívoco.\n\nruta_posterior_probable: en el proceso QUIXA, después de la Sesión Anticonsejo se elige consultoría, junta o proyecto según el alcance. Indica qué servicio podría seguir según lo dicho: \"estrategia\" (definir rumbo, prioridades, propuesta de valor), \"junta_asesora\" (necesidad recurrente de contraste, soledad del dueño), \"proyectos_consultoria\" (problema complejo de varias áreas o ejecución extensa), o \"\". Justifica en ruta_posterior_razon con una frase. Para chat_type \"embajadores\" deja ambos campos en \"\" y rol_lider en \"\".\n\npreparacion_consultor: lo que el consultor necesita para preparar el abordaje. Todo aquí es INTERPRETACIÓN tuya y debe poder rastrearse a lo que dijo el prospecto:\n- hipotesis_iniciales: dos o tres hipótesis sobre la causa de fondo del reto, cada una empezando con \"Hipótesis:\".\n- datos_a_investigar: datos de la empresa, del sector o del mercado que conviene revisar o pedir antes de la sesión (por ejemplo, rentabilidad por cliente, estadísticas del sector, precios de la competencia).\n- preguntas_para_la_sesion: dos o tres preguntas que el consultor podría profundizar en la sesión.\n- supuestos_a_cuestionar: supuestos o reglas instaladas que el prospecto mencionó y que valdría la pena cuestionar (estilo Anticonsejo).\n\nreferido: SOLO para chat_type \"embajadores\", si el prospecto habló de una empresa o empresario concreto a conectar. Llena empresa, lider, cargo_lider, sector, anos_operacion, rango_ventas, reto y relacion_con_embajador con lo que se dijo. Si no habló de uno concreto, deja el objeto con valores \"\".\n\nalertas_revision: arreglo de textos cortos para el revisor humano. Incluye, cuando aplique: correo o teléfono con formato dudoso; la organización no parece una pyme (por ejemplo, una universidad o una gran empresa); el interlocutor no parece tener poder de decisión; datos contradictorios en la conversación; necesidad fuera del portafolio. Si no hay, arreglo vacío.\n\nESTRUCTURA EXACTA A DEVOLVER:\n\n{\n  \"chat_type\": \"\",\n  \"servicio_orientado\": \"\",\n  \"alternativa_secundaria\": \"\",\n  \"motivo_orientacion\": \"\",\n  \"acepto_profundizar\": \"\",\n  \"estado_conversacion\": \"\",\n  \"tipo_interlocutor\": \"\",\n  \"nombre_contacto\": \"\",\n  \"cargo_contacto\": \"\",\n  \"responsabilidades_contacto\": \"\",\n  \"empresa_nombre\": \"\",\n  \"actividad_empresa\": \"\",\n  \"sector\": \"\",\n  \"productos_servicios\": \"\",\n  \"etapa_empresa\": \"\",\n  \"ciudad\": \"\",\n  \"pais\": \"\",\n  \"email\": \"\",\n  \"telefono\": \"\",\n  \"autorizacion_datos\": \"\",\n  \"plazo_avance\": \"\",\n  \"urgencia\": \"\",\n  \"reto_principal\": \"\",\n  \"area_reto\": \"\",\n  \"efecto_en_resultados\": \"\",\n  \"resultado_esperado\": \"\",\n  \"senal_de_utilidad\": \"\",\n  \"claridad_necesidad\": \"\",\n  \"situacion_reciente\": \"\",\n  \"resultado_especializado\": {},\n  \"analisis_respuestas\": [],\n  \"classification\": \"\",\n  \"classification_reason\": \"\",\n  \"necesidad_fuera_portafolio\": false,\n  \"descripcion_necesidad_fuera_portafolio\": \"\",\n  \"informacion_adicional\": \"\",\n  \"correcciones_prospecto\": \"\",\n  \"rol_lider\": \"\",\n  \"anos_operacion\": \"\",\n  \"anos_operacion_num\": null,\n  \"rango_ventas\": \"\",\n  \"problemas_quixa\": [],\n  \"frenos_detectados\": [],\n  \"senales_alerta_icp\": [],\n  \"ruta_posterior_probable\": \"\",\n  \"ruta_posterior_razon\": \"\",\n  \"preparacion_consultor\": {\n    \"hipotesis_iniciales\": [],\n    \"datos_a_investigar\": [],\n    \"preguntas_para_la_sesion\": [],\n    \"supuestos_a_cuestionar\": []\n  },\n  \"referido\": {\n    \"empresa\": \"\",\n    \"lider\": \"\",\n    \"cargo_lider\": \"\",\n    \"sector\": \"\",\n    \"anos_operacion\": \"\",\n    \"rango_ventas\": \"\",\n    \"reto\": \"\",\n    \"relacion_con_embajador\": \"\"\n  },\n  \"datos_pendientes\": [],\n  \"alertas_revision\": [],\n  \"resumen_para_consultor\": \"\"\n}\n\nNOTA SOBRE DOS CAMPOS CLAVE:\n\nmotivo_orientacion: una o dos frases sobre POR QUÉ se orientó hacia ese servicio, basadas en lo que el prospecto manifestó.\n\nresumen_para_consultor: tres o cuatro frases que permitan a un consultor de QUIXA entender el caso sin leer la transcripción: quién es, qué empresa y en qué etapa, el reto con sus palabras, lo más revelador del chat especializado (problemas QUIXA que se evidencian) y qué espera.\n\nTRANSCRIPCIÓN A ANALIZAR:\n\n{{ $json.transcripcion_codificada }}",
+        "messages": {}
+      }
+    },
+    {
+      "id": "gemini-extractor",
+      "name": "Gemini extractor",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1100,
+        60
+      ],
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash",
+        "options": {
+          "temperature": 0.1,
+          "maxOutputTokens": 8000
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "RuZqi192vXNISAgi",
+          "name": "Gemini QUIXA Demo"
+        }
+      }
+    },
+    {
+      "id": "armar-lead",
+      "name": "Armar lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        -140
+      ],
+      "parameters": {
+        "jsCode": "const inp = $input.first().json || {};\nlet txt = inp.text || '';\nlet lead;\nif (!txt) {\n  // La extraccion no se pudo completar: se guarda el caso para revision humana.\n  lead = { extraccion_fallida: true, estado_conversacion: 'revision_humana',\n           observaciones: 'No se pudo generar la ficha estructurada: ' + (inp.error || 'el modelo no respondio') };\n} else {\n  txt = String(txt).replace(/```json/gi, '').replace(/```/g, '').trim();\n  const i = txt.indexOf('{'), f = txt.lastIndexOf('}');\n  if (i >= 0 && f > i) txt = txt.slice(i, f + 1);\n  try { lead = JSON.parse(txt); }\n  catch (e) { lead = { error_parseo: String(e), crudo: txt, estado_conversacion: 'revision_humana' }; }\n}\nconst ctx = $('Detectar cierre').first().json;\nconst t = $('Armar transcripcion').first().json;\n\n// Une la respuesta literal (código) con el resumen y tipo de evidencia (IA)\nconst mapa = {};\nfor (const a of (Array.isArray(lead.analisis_respuestas) ? lead.analisis_respuestas : []))\n  if (a && a.question_id) mapa[String(a.question_id).toUpperCase().replace(/-P$/, '')] = a;\nlead.respuestas = (t.respuestas || []).map(r => ({\n  question_id: r.question_id,\n  question_text: r.question_text,\n  answer_raw: r.answer_raw,\n  answer_summary: (mapa[r.question_id] || {}).answer_summary || '',\n  evidence_type: (mapa[r.question_id] || {}).evidence_type || '',\n  follow_up_used: r.follow_up_used,\n  follow_ups: r.follow_ups\n}));\ndelete lead.analisis_respuestas;\nif (t.chat_type) lead.chat_type = t.chat_type;\n\nlead.alertas_revision = Array.isArray(lead.alertas_revision) ? lead.alertas_revision : [];\nif (lead.email && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/.test(String(lead.email).trim()))\n  lead.alertas_revision.push('Correo con formato inválido: ' + lead.email);\nif (lead.telefono && String(lead.telefono).replace(/\\D/g, '').length < 7)\n  lead.alertas_revision.push('Teléfono incompleto: ' + lead.telefono);\n\n// Ajuste al perfil de cliente ideal (Portafolio QUIXA 2026, \"Perfil de cliente a referir\").\n// Criterio en código para que sea transparente y QUIXA pueda ajustarlo.\nconst arr = v => Array.isArray(v) ? v : [];\nif (lead.chat_type === 'embajadores') {\n  lead.ajuste_perfil = { aplica: false, nivel: 'no_aplica', nota: 'Embajador: evaluar el perfil del referido.' };\n} else {\n  const anos = Number.isFinite(lead.anos_operacion_num) ? lead.anos_operacion_num : null;\n  const criterios = {\n    lider: { dueno_ceo_fundador_gerente: 'cumple', directivo: 'parcial', otro: 'no_cumple' }[lead.rol_lider] || 'sin_dato',\n    trayectoria: anos === null ? 'sin_dato' : (anos >= 10 ? 'cumple' : 'no_cumple'),\n    tamano: { '6000_50000': 'cumple', '2500_6000': 'parcial', menos_2500: 'no_cumple', mas_50000: 'no_cumple' }[lead.rango_ventas] || 'sin_dato',\n    senales: (arr(lead.senales_alerta_icp).length || arr(lead.problemas_quixa).length) ? 'cumple' : 'no_cumple'\n  };\n  const pts = Object.values(criterios).reduce((a, c) => a + (c === 'cumple' ? 2 : c === 'parcial' ? 1 : 0), 0);\n  const sinDato = Object.values(criterios).filter(c => c === 'sin_dato').length;\n  const nivel = sinDato >= 2 ? 'por_validar' : pts >= 6 ? 'alto' : pts >= 3 ? 'medio' : 'bajo';\n  lead.ajuste_perfil = { aplica: true, nivel, puntaje: pts, maximo: 8, criterios,\n    referencia: 'Dueño/CEO/fundador/gerente · más de 10 años · ventas COP 6.000–50.000 millones · señales de alerta' };\n}\n// Referencia interna de inversión (no se muestra al prospecto)\nconst tramo = { menos_2500: 'USD 899 (emprendedores / consolidación)', '2500_6000': 'USD 1.299', '6000_50000': 'USD 2.199', mas_50000: 'USD 2.199' }[lead.rango_ventas];\nlead.referencia_inversion_interna = {\n  anticonsejo: 'Desde USD 150',\n  estrategia: tramo || 'Por definir: falta el rango de ventas',\n  junta_asesora: 'USD 1.299 / mes, mínimo 6 meses',\n  proyectos_consultoria: 'A la medida',\n  modelo_pago: 'El empresario paga las primeras dos sesiones; si continúa, se abona al servicio elegido.'\n};\nlead.etapa_proceso = '2_consultor_quixa';\n\nlead.conversation_id = ctx.sessionId;\nlead.review_status = 'pendiente';\nlead.created_at = new Date().toISOString();\nlead.origen_pagina = ctx.page;\nlead.origen_ref = ctx.ref;\nlead.turnos = t.turnos;\nlead.transcripcion = t.transcripcion;\nconst stamp = lead.created_at.slice(0, 19).replace(/[:T]/g, '-');\nreturn [{ json: { lead, nombreArchivo: `lead-${stamp}-${ctx.sessionId.slice(-6)}.json`, reply: ctx.reply } }];"
+      }
+    },
+    {
+      "id": "json-a-archivo",
+      "name": "JSON a archivo",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1480,
+        -140
+      ],
+      "parameters": {
+        "operation": "toJson",
+        "mode": "each",
+        "options": {
+          "format": true
+        }
+      }
+    },
+    {
+      "id": "guardar-en-disco",
+      "name": "Guardar en disco",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1700,
+        -140
+      ],
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/home/germandiaz/Desktop/contexto_proyecto_quixa/demo-quixa/leads/{{ $('Armar lead').item.json.nombreArchivo }}",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "responder-cierre",
+      "name": "Responder cierre",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1920,
+        -140
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ reply: $('Armar lead').item.json.reply, fin: true, lead: $('Armar lead').item.json.lead }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "responder-turno",
+      "name": "Responder turno",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        620,
+        140
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ reply: $json.reply, fin: false, codigo: $json.codigo }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "gemini-respaldo",
+      "name": "Gemini respaldo",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        40,
+        380
+      ],
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.75,
+          "maxOutputTokens": 900
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "RuZqi192vXNISAgi",
+          "name": "Gemini QUIXA Demo"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Chat": {
+      "main": [
+        [
+          {
+            "node": "Preparar mensaje",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar mensaje": {
+      "main": [
+        [
+          {
+            "node": "Consultor QUIXA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Consultor QUIXA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memoria": {
+      "ai_memory": [
+        [
+          {
+            "node": "Consultor QUIXA",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Leer conversacion",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultor QUIXA": {
+      "main": [
+        [
+          {
+            "node": "Detectar cierre",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detectar cierre": {
+      "main": [
+        [
+          {
+            "node": "Termino",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Termino": {
+      "main": [
+        [
+          {
+            "node": "Leer conversacion",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder turno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer conversacion": {
+      "main": [
+        [
+          {
+            "node": "Armar transcripcion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar transcripcion": {
+      "main": [
+        [
+          {
+            "node": "Extraer registro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini extractor": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extraer registro",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer registro": {
+      "main": [
+        [
+          {
+            "node": "Armar lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar lead": {
+      "main": [
+        [
+          {
+            "node": "JSON a archivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON a archivo": {
+      "main": [
+        [
+          {
+            "node": "Guardar en disco",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar en disco": {
+      "main": [
+        [
+          {
+            "node": "Responder cierre",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini respaldo": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Consultor QUIXA",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

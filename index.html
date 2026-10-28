@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QUIXA GROUP · Consultoría para pymes</title>
+<style>
+  :root{--navy:#1B2A5B;--navy2:#24376F;--naranja:#F26B3A;--tinta:#1A1F36;--gris:#5A6485;--linea:#E4E7F0;--fondo:#F6F7FB}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    color:var(--tinta);line-height:1.6;background:#fff}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+  header{border-bottom:1px solid var(--linea);position:sticky;top:0;background:rgba(255,255,255,.96);
+    backdrop-filter:blur(8px);z-index:10}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:68px}
+  .logo{font-size:23px;font-weight:800;color:var(--navy);letter-spacing:-.02em}
+  .logo span{color:var(--naranja)}
+  .nav a{color:var(--gris);text-decoration:none;font-size:14px;margin-left:26px}
+  .nav a:hover{color:var(--navy)}
+  .hero{background:linear-gradient(160deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;padding:78px 0 86px}
+  .hero h1{font-size:clamp(30px,4.6vw,46px);line-height:1.17;margin:0 0 18px;letter-spacing:-.02em;max-width:17ch}
+  .hero p{font-size:17.5px;opacity:.86;max-width:60ch;margin:0 0 30px}
+  .btn{display:inline-block;background:var(--naranja);color:#fff;padding:13px 26px;border-radius:9px;
+    text-decoration:none;font-weight:600;font-size:15px;border:none;cursor:pointer}
+  .btn:hover{filter:brightness(1.07)}
+  .pill{display:inline-block;background:rgba(255,255,255,.14);padding:5px 13px;border-radius:99px;
+    font-size:12.5px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:20px}
+  section{padding:66px 0}
+  h2{font-size:28px;margin:0 0 10px;letter-spacing:-.015em}
+  .sub{color:var(--gris);margin:0 0 36px;font-size:16px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(252px,1fr));gap:20px}
+  .card{border:1px solid var(--linea);border-radius:13px;padding:24px;background:#fff}
+  .card h3{margin:0 0 7px;font-size:16.5px;color:var(--navy)}
+  .card p{margin:0 0 14px;font-size:14.2px;color:var(--gris)}
+  .card .precio{font-size:13px;font-weight:700;color:var(--naranja);letter-spacing:.02em}
+  .alt{background:var(--fondo)}
+  .pasos{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:18px;margin-top:8px}
+  .paso{position:relative;padding-left:42px}
+  .paso b{position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;background:var(--navy);
+    color:#fff;display:flex;align-items:center;justify-content:center;font-size:13.5px}
+  .paso h4{margin:4px 0 5px;font-size:14.5px}
+  .paso p{margin:0;font-size:13.3px;color:var(--gris)}
+  footer{background:var(--navy);color:rgba(255,255,255,.75);padding:34px 0;font-size:13.5px}
+  .foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .demo-nota{background:#FFF7ED;border:1px solid #FDBA8C;border-radius:10px;padding:15px 18px;
+    font-size:13.6px;color:#8A4B1F;margin-top:30px}
+  @media(max-width:620px){.nav a{display:none}.hero{padding:54px 0 60px}}
+</style>
+</head>
+<body>
+
+<header><div class="wrap nav">
+  <div class="logo">Qui<span>x</span>a</div>
+  <nav><a href="#servicios">Servicios</a><a href="#como">Cómo trabajamos</a><a href="/leads.html">Leads capturados</a></nav>
+</div></header>
+
+<div class="hero"><div class="wrap">
+  <div class="pill">Consultoría para pymes</div>
+  <h1>Decidir mejor para crecer</h1>
+  <p>Acompañamos a dueños y CEO de pymes a ordenar el crecimiento y convertir decisiones estratégicas en acciones reales.</p>
+  <button class="btn" onclick="window.QuixaChat && window.QuixaChat.open()">Conversar con el consultor virtual</button>
+</div></div>
+
+<section id="servicios"><div class="wrap">
+  <h2>Nuestro portafolio</h2>
+  <p class="sub">Cinco rutas según el reto y el nivel de acompañamiento que necesitas.</p>
+  <div class="grid">
+    <div class="card"><h3>Sesión Anticonsejo 1:1</h3><p>Conversación de 90 minutos para ordenar el problema, cuestionar supuestos y definir próximos pasos.</p><div class="precio">Desde USD 150</div></div>
+    <div class="card"><h3>Consultoría en Estrategia</h3><p>Cuatro semanas: diagnóstico, elecciones, sistema de valor y una ruta de 90 días con prioridades y métricas.</p><div class="precio">Desde USD 899</div></div>
+    <div class="card"><h3>Junta Asesora</h3><p>Acompañamiento mensual con dos consultores para revisar decisiones, avances y foco.</p><div class="precio">USD 1.299/mes · mínimo 6 meses</div></div>
+    <div class="card"><h3>Proyectos de Consultoría</h3><p>Diagnóstico y ejecución sobre múltiples áreas, con investigación y trabajo extenso.</p><div class="precio">Inversión a la medida</div></div>
+    <div class="card"><h3>Programa de Embajadores</h3><p>Para personas y firmas que conectan a QUIXA con empresarios que tienen retos reales de crecimiento.</p><div class="precio">Resultado compartido</div></div>
+  </div>
+</div></section>
+
+<section class="alt" id="como"><div class="wrap">
+  <h2>Cómo trabajamos</h2>
+  <p class="sub">Del primer contacto al diagnóstico, en una sola conversación.</p>
+  <div class="pasos">
+    <div class="paso"><b>1</b><h4>Conversación inicial</h4><p>Entendemos quién eres y qué está pasando en tu empresa.</p></div>
+    <div class="paso"><b>2</b><h4>Identificación del reto</h4><p>Profundizamos hasta comprender el problema real, no el síntoma.</p></div>
+    <div class="paso"><b>3</b><h4>Diagnóstico</h4><p>Validamos contexto, impacto y urgencia.</p></div>
+    <div class="paso"><b>4</b><h4>Orientación</h4><p>Te proponemos una ruta preliminar y explicamos por qué.</p></div>
+    <div class="paso"><b>5</b><h4>Seguimiento</h4><p>Un consultor revisa tu caso con todo el contexto.</p></div>
+  </div>
+  <div class="demo-nota">
+    <b>Demostración.</b> Este es un prototipo construido con n8n y un modelo de lenguaje, en ejecución local.
+    La conversación produce un registro estructurado del caso que puedes ver en
+    <a href="/leads.html">Leads capturados</a>.
+  </div>
+</div></section>
+
+<footer><div class="wrap foot">
+  <div><b style="color:#fff">QUIXA GROUP · SAS BIC</b> — Más que consultoría, soluciones que impulsan tu negocio.</div>
+  <div>Prototipo / Demo</div>
+</div></footer>
+
+<script src="/widget/quixa-chat.js"
+        data-endpoint="http://localhost:5678/webhook/chat"
+        data-titulo="Consultor Virtual"
+        data-subtitulo="QUIXA GROUP"></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+.env
+node_modules/
+*.log
+leads/
+.n8n-data/
+.n8n-cookie
+*.pid
