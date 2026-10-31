@@ -4,67 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Leads capturados · QUIXA</title>
-<style>
-  :root{--navy:#1B2A5B;--naranja:#F26B3A;--tinta:#1A1F36;--gris:#5A6485;--linea:#E4E7F0;--fondo:#F6F7FB}
-  *{box-sizing:border-box}
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-    background:var(--fondo);color:var(--tinta)}
-  header{background:var(--navy);color:#fff;padding:17px 0}
-  .wrap{max-width:1180px;margin:0 auto;padding:0 22px}
-  .nav{display:flex;align-items:center;justify-content:space-between}
-  .logo{font-size:21px;font-weight:800}.logo span{color:var(--naranja)}
-  .nav a{color:rgba(255,255,255,.8);text-decoration:none;font-size:14px}
-  h1{font-size:25px;margin:28px 0 4px}
-  .sub{color:var(--gris);margin:0 0 22px;font-size:15px}
-  .cols{display:grid;grid-template-columns:330px 1fr;gap:20px;align-items:start;padding-bottom:50px}
-  .lista{background:#fff;border:1px solid var(--linea);border-radius:12px;overflow:hidden;max-height:78vh;overflow-y:auto}
-  .item{padding:14px 16px;border-bottom:1px solid var(--linea);cursor:pointer}
-  .item:hover{background:#F0F3FA}
-  .item.sel{background:#EAF0FC;border-left:3px solid var(--navy)}
-  .item b{display:block;font-size:14.5px}
-  .item small{color:var(--gris);font-size:12.3px}
-  .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
-  .tag{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:99px;font-weight:600;letter-spacing:.03em;background:#EEF1F7;color:#3B4668}
-  .t-completa,.t-alto,.t-revisar_para_sesion_1a1,.t-lista_para_revision{background:#DCFCE7;color:#166534}
-  .t-parcial,.t-medio,.t-requiere_profundizacion,.t-por_validar{background:#FEF3C7;color:#92400E}
-  .t-revision_humana,.t-bajo,.t-sin_ajuste_suficiente_por_ahora,.t-informacion_insuficiente{background:#FEE2E2;color:#991B1B}
-  .detalle{background:#fff;border:1px solid var(--linea);border-radius:12px;padding:26px;min-height:300px}
-  .vacio{color:var(--gris);text-align:center;padding:70px 20px}
-  .cabeza{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px}
-  .cabeza h2{margin:0;font-size:20px}.cabeza p{margin:3px 0 0;color:var(--gris);font-size:13.5px}
-  .resumen{background:#F0F4FF;border-left:3px solid var(--navy);padding:15px 18px;border-radius:7px;
-    font-size:14.3px;line-height:1.62;margin-bottom:18px}
-  .alerta{background:#FFF7ED;border-left:3px solid var(--naranja);padding:11px 16px;border-radius:7px;font-size:13.4px;margin-bottom:14px}
-  .alerta ul{margin:4px 0 0;padding-left:18px}
-  h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--navy);margin:24px 0 8px}
-  table{width:100%;border-collapse:collapse;font-size:13.5px}
-  td,th{padding:7px 10px;border-bottom:1px solid #F0F2F7;vertical-align:top;text-align:left}
-  td.k{color:var(--gris);width:210px;font-size:12.6px}
-  th{font-size:11.5px;color:var(--gris);font-weight:600}
-  .crit{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
-  .crit div{border:1px solid var(--linea);border-radius:8px;padding:9px 11px;font-size:12.5px}
-  .crit b{display:block;font-size:11px;color:var(--gris);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
-  .cumple{color:#166534}.parcial{color:#92400E}.no_cumple{color:#991B1B}.sin_dato{color:#8A93AD}
-  .prep ul{margin:4px 0 10px;padding-left:18px;font-size:13.6px;line-height:1.55}
-  .prep b{font-size:12.6px;color:var(--gris)}
-  .q{font-size:12.5px;color:var(--gris)}.lit{font-size:13.5px}
-  .fu{font-size:12.4px;color:#44507A;margin-top:4px;padding-left:10px;border-left:2px solid var(--linea)}
-  .ev{font-size:10.5px;padding:2px 7px;border-radius:99px;background:#EEF1F7;white-space:nowrap}
-  .ev-ejemplo_concreto,.ev-dato{background:#DCFCE7;color:#166534}.ev-percepcion{background:#E0E7FF;color:#3730A3}
-  .ev-pendiente_validar,.ev-sin_respuesta{background:#FEF3C7;color:#92400E}
-  .vacio-campo{color:#C2C8D8}
-  details{margin-top:20px}summary{cursor:pointer;color:var(--navy);font-size:13.5px;font-weight:600}
-  pre{background:#1A1F36;color:#D7DCE8;padding:16px;border-radius:9px;overflow:auto;font-size:11.6px;max-height:420px;white-space:pre-wrap}
-  @media(max-width:820px){.cols{grid-template-columns:1fr}td.k{width:130px}}
-</style>
+<link rel="icon" type="image/png" href="favicon-quixa.png">
+<link rel="apple-touch-icon" href="favicon-quixa.png">
+<link rel="stylesheet" href="/estilos.css">
+<link rel="stylesheet" href="/leads.css">
 </head>
-<body>
-<header><div class="wrap nav">
-  <div class="logo">Qui<span>x</span>a</div><a href="/">← Volver al sitio</a>
+<body class="cuerpo-leads">
+<header class="sitio-header"><div class="wrap nav">
+  <a class="marca" href="index.html" aria-label="Ir a la página principal"><img src="Logo_quixa.png" alt="QUIXA" class="logo-img"></a>
+  <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu" aria-label="Abrir menú"><span></span></button>
+  <nav class="menu" id="menu">
+    <a href="index.html">Inicio</a>
+    <a href="index.html#servicios">Servicios</a>
+    <a href="como-funciona.html">Cómo funciona</a>
+    <a href="leads.html" aria-current="page">Leads</a>
+  </nav>
 </div></header>
 
 <div class="wrap">
-  <h1>Leads capturados</h1>
+  <h1 class="titulo-leads">Leads capturados</h1>
   <p class="sub">Ficha que recibe el consultor de QUIXA (paso 2 del proceso) para estudiar el caso y estructurar el abordaje.</p>
   <div class="cols">
     <div class="lista" id="lista"><div class="vacio">Cargando…</div></div>
@@ -184,7 +142,8 @@ function ver(i, node){
 }
 
 fetch('/api/leads').then(r => r.json()).then(d => { datos = d; pintarLista(); })
-  .catch(() => { document.getElementById('lista').innerHTML = '<div class="vacio">No se pudo cargar.</div>'; });
+  .catch(() => { document.getElementById('lista').innerHTML = '<div class="vacio">No se pudo cargar. Abre esta página desde el servidor de la demo.</div>'; });
 </script>
+<script src="/sitio.js"></script>
 </body>
 </html>

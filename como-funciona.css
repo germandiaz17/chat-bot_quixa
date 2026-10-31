@@ -1,0 +1,333 @@
+/* Cómo funciona Page Styles */
+
+.page-title-section {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 48px;
+    align-items: flex-start;
+}
+
+.page-main-title {
+    font-size: 46px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+}
+
+.page-main-subtitle {
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.process-section {
+    margin-bottom: 48px;
+}
+
+.process-timeline {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.process-step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 32px;
+    align-items: start;
+}
+
+.step-connector {
+    position: absolute;
+    left: 40px;
+    top: 80px;
+    bottom: -32px;
+    width: 2px;
+    background: linear-gradient(180deg, var(--lavender-accent) 0%, var(--lavender-3) 100%);
+    z-index: 0;
+}
+
+.process-step:last-child .step-connector {
+    display: none;
+}
+
+.step-number {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-mid) 0%, var(--primary-mid-2) 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 800;
+    box-shadow: 0 8px 24px rgba(62, 37, 135, 0.25);
+    position: relative;
+    z-index: 1;
+    flex-shrink: 0;
+}
+
+.step-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(43, 21, 101, 0.08);
+    padding: 32px;
+    position: relative;
+}
+
+.step-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.step-icon {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.step-header-text {
+    flex: 1;
+}
+
+.step-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 4px;
+}
+
+.step-subtitle {
+    font-size: 15px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.step-description {
+    font-size: 16px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 20px;
+}
+
+.step-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.step-list li {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    padding-left: 24px;
+    position: relative;
+}
+
+.step-list li::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 10px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--lavender-accent-2);
+}
+
+.cta-section {
+    margin-top: 56px;
+}
+
+.cta-card {
+    background: linear-gradient(135deg, var(--primary-mid) 0%, var(--primary-mid-2) 100%);
+    border-radius: 16px;
+    padding: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    box-shadow: 0 12px 40px rgba(62, 37, 135, 0.25);
+}
+
+.cta-content {
+    flex: 1;
+}
+
+.cta-title {
+    font-size: 32px;
+    font-weight: 800;
+    color: white;
+    line-height: 1.2;
+    margin-bottom: 8px;
+}
+
+.cta-subtitle {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.5;
+}
+
+.cta-actions {
+    display: flex;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.cta-btn-primary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    color: var(--primary-deep);
+    text-decoration: none;
+    padding: 14px 28px;
+    border-radius: 10px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+}
+
+.cta-btn-primary:hover {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+    transform: translateY(-1px);
+}
+
+.cta-btn-secondary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    text-decoration: none;
+    padding: 14px 28px;
+    border-radius: 10px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.2s ease;
+}
+
+.cta-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+@media (max-width: 968px) {
+    .page-main-title {
+        font-size: 36px;
+    }
+    
+    .page-main-subtitle {
+        font-size: 18px;
+    }
+    
+    .process-step {
+        grid-template-columns: 60px 1fr;
+        gap: 20px;
+    }
+    
+    .step-number {
+        width: 60px;
+        height: 60px;
+        font-size: 22px;
+    }
+    
+    .step-connector {
+        left: 30px;
+        top: 60px;
+    }
+    
+    .step-card {
+        padding: 24px;
+    }
+    
+    .cta-card {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 32px;
+    }
+    
+    .cta-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+    
+    .cta-btn-primary,
+    .cta-btn-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 640px) {
+    .page-title-section {
+        gap: 14px;
+    }
+    
+    .page-main-title {
+        font-size: 28px;
+    }
+    
+    .page-main-subtitle {
+        font-size: 16px;
+    }
+    
+    .process-step {
+        grid-template-columns: 50px 1fr;
+        gap: 16px;
+    }
+    
+    .step-number {
+        width: 50px;
+        height: 50px;
+        font-size: 18px;
+    }
+    
+    .step-connector {
+        left: 25px;
+        top: 50px;
+    }
+    
+    .step-card {
+        padding: 20px;
+    }
+    
+    .step-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .step-title {
+        font-size: 22px;
+    }
+    
+    .cta-card {
+        padding: 24px;
+    }
+    
+    .cta-title {
+        font-size: 26px;
+    }
+    
+    .cta-subtitle {
+        font-size: 16px;
+    }
+}
