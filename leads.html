@@ -1,34 +1,71 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Leads capturados · QUIXA</title>
-<link rel="icon" type="image/png" href="favicon-quixa.png">
-<link rel="apple-touch-icon" href="favicon-quixa.png">
-<link rel="stylesheet" href="/estilos.css">
-<link rel="stylesheet" href="/leads.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de chats - QUIXA</title>
+    <link rel="icon" type="image/png" href="favicon-quixa.png">
+    <link rel="apple-touch-icon" href="favicon-quixa.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="estilos.css">
+    <link rel="stylesheet" href="leads.css">
 </head>
 <body class="cuerpo-leads">
-<header class="sitio-header"><div class="wrap nav">
-  <a class="marca" href="index.html" aria-label="Ir a la página principal"><img src="Logo_quixa.png" alt="QUIXA" class="logo-img"></a>
-  <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="menu" aria-label="Abrir menú"><span></span></button>
-  <nav class="menu" id="menu">
-    <a href="index.html">Inicio</a>
-    <a href="index.html#servicios">Servicios</a>
-    <a href="como-funciona.html">Cómo funciona</a>
-    <a href="leads.html" aria-current="page">Leads</a>
-  </nav>
-</div></header>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="header-left">
+                <a href="index.html" class="logo-group" aria-label="Ir a la página principal">
+                    <img src="Logo_quixa.png" alt="QUIXA" class="logo-img">
+                </a>
+                <div class="header-separator"></div>
+                <div class="header-slogan">
+                    <div>Estrategia · Procesos · Personas</div>
+                    <div>para un crecimiento sostenible</div>
+                </div>
+            </div>
 
-<div class="wrap">
-  <h1 class="titulo-leads">Leads capturados</h1>
-  <p class="sub">Ficha que recibe el consultor de QUIXA (paso 2 del proceso) para estudiar el caso y estructurar el abordaje.</p>
-  <div class="cols">
-    <div class="lista" id="lista"><div class="vacio">Cargando…</div></div>
-    <div class="detalle" id="detalle"><div class="vacio">Selecciona un lead de la lista.</div></div>
-  </div>
-</div>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Inicio</a>
+                <a href="index.html#servicios" class="nav-link">Servicios</a>
+                <a href="como-funciona.html" class="nav-link">Cómo funciona</a>
+            </nav>
+
+            <a href="leads.html" class="header-btn" aria-current="page">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M3 4.5C3 3.67 3.67 3 4.5 3H13.5C14.33 3 15 3.67 15 4.5V11C15 11.83 14.33 12.5 13.5 12.5H7L4 15V12.5H4.5C3.67 12.5 3 11.83 3 11V4.5Z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+                    <path d="M6 6.5H12M6 9H10" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+                <span>Historial de chats</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="main-container">
+            <section class="title-section">
+                <div class="title-bar"></div>
+                <div class="title-text">
+                    <h1 class="main-title">Historial de chats</h1>
+                    <p class="main-subtitle">Conversaciones con el asistente y la ficha que recibe el consultor de QUIXA para estudiar cada caso.</p>
+                </div>
+            </section>
+
+            <div class="cols">
+                <section class="lista-card" aria-label="Conversaciones">
+                    <div class="lista-header">
+                        <h2 class="lista-titulo">Conversaciones</h2>
+                        <span class="lista-contador" id="contador"></span>
+                    </div>
+                    <div class="lista" id="lista"><div class="vacio">Cargando…</div></div>
+                </section>
+                <section class="detalle" id="detalle" aria-live="polite"><div class="vacio">Selecciona una conversación de la lista.</div></section>
+            </div>
+        </div>
+    </main>
 
 <script>
 const CHAT = { general:'Chat general', anticonsejo_1a1:'Anticonsejo 1:1', estrategia:'Consultoría en Estrategia',
@@ -53,7 +90,8 @@ function lista(t, arr){ arr = (arr || []).filter(Boolean); return arr.length ? `
 
 function pintarLista(){
   const el = document.getElementById('lista');
-  if (!datos.length){ el.innerHTML = '<div class="vacio">Todavía no hay leads.<br><br>Conversa con el widget en el sitio y cierra la conversación.</div>'; return; }
+  document.getElementById('contador').textContent = datos.length ? datos.length + (datos.length === 1 ? ' registro' : ' registros') : '';
+  if (!datos.length){ el.innerHTML = '<div class="vacio">Todavía no hay conversaciones.<br><br>Conversa con el asistente en la página de inicio y cierra la conversación.</div>'; return; }
   el.innerHTML = datos.map((d,i) => {
     const l = d.lead || {};
     const est = l.estado_conversacion || 'parcial';
@@ -144,6 +182,5 @@ function ver(i, node){
 fetch('/api/leads').then(r => r.json()).then(d => { datos = d; pintarLista(); })
   .catch(() => { document.getElementById('lista').innerHTML = '<div class="vacio">No se pudo cargar. Abre esta página desde el servidor de la demo.</div>'; });
 </script>
-<script src="/sitio.js"></script>
 </body>
 </html>

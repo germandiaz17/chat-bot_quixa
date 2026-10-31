@@ -32,12 +32,12 @@
                 <a href="como-funciona.html" class="nav-link">Cómo funciona</a>
             </nav>
 
-            <a href="login-agentes.html" class="header-btn">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="9" cy="6.5" r="3" stroke="white" stroke-width="1.5"/>
-                    <path d="M3.5 15C3.5 12.5 5.7 10.5 9 10.5C12.3 10.5 14.5 12.5 14.5 15" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <a href="leads.html" class="header-btn">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M3 4.5C3 3.67 3.67 3 4.5 3H13.5C14.33 3 15 3.67 15 4.5V11C15 11.83 14.33 12.5 13.5 12.5H7L4 15V12.5H4.5C3.67 12.5 3 11.83 3 11V4.5Z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+                    <path d="M6 6.5H12M6 9H10" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
                 </svg>
-                <span>Soy Agente Quixa</span>
+                <span>Historial de chats</span>
             </a>
         </div>
     </header>
@@ -71,7 +71,7 @@
                         </div>
                     </div>
 
-                    <div class="chat-body">
+                    <div class="chat-body" aria-live="polite">
                         <div class="message-group">
                             <div class="bot-message">
                                 <div class="bot-avatar">
@@ -86,32 +86,32 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="message-time">10:24 a. m.</div>
+                            <div class="message-time"></div>
                         </div>
 
                         <div class="quick-replies">
-                            <button class="chip">
+                            <button type="button" class="chip">
                                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M3 13L7 9L10 12L15 6" stroke="#4A2C9B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                                     <path d="M12 6H15V9" stroke="#4A2C9B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
                                 <span>Estrategia y crecimiento</span>
                             </button>
-                            <button class="chip">
+                            <button type="button" class="chip">
                                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <circle cx="9" cy="9" r="2" stroke="#4A2C9B" stroke-width="1.5"/>
                                     <path d="M9 3V5M9 13V15M3 9H5M13 9H15M5.636 5.636L7.05 7.05M10.95 10.95L12.364 12.364M5.636 12.364L7.05 10.95M10.95 7.05L12.364 5.636" stroke="#4A2C9B" stroke-width="1.5" stroke-linecap="round"/>
                                 </svg>
                                 <span>Procesos y eficiencia</span>
                             </button>
-                            <button class="chip">
+                            <button type="button" class="chip">
                                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <circle cx="9" cy="7" r="3" stroke="#4A2C9B" stroke-width="1.5"/>
                                     <path d="M4 15C4 12.2386 6.23858 10 9 10C11.7614 10 14 12.2386 14 15" stroke="#4A2C9B" stroke-width="1.5" stroke-linecap="round"/>
                                 </svg>
                                 <span>Acompañamiento directivo</span>
                             </button>
-                            <button class="chip">
+                            <button type="button" class="chip">
                                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <rect x="4" y="4" width="10" height="10" rx="1.5" stroke="#4A2C9B" stroke-width="1.5"/>
                                     <path d="M7 8H11M7 10H9" stroke="#4A2C9B" stroke-width="1.5" stroke-linecap="round"/>
@@ -122,17 +122,18 @@
                     </div>
 
                     <div class="chat-input-container">
-                        <div class="chat-input-wrapper">
+                        <form class="chat-input-wrapper">
                             <svg class="input-sparkle" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M9 3L10.5 7.5H15L11.25 10.5L12.75 15L9 12L5.25 15L6.75 10.5L3 7.5H7.5L9 3Z" stroke="#4A2C9B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
-                            <input type="text" class="chat-input" placeholder="Escribe tu pregunta..." />
-                            <button class="send-button">
-                                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M10.1667 11.8333L4.25 16.5L16.5 5.5L10.1667 11.8333ZM10.1667 11.8333L4.25 5.5L16.5 16.5L10.1667 11.8333Z" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <input type="text" class="chat-input" placeholder="Escribe tu pregunta..." aria-label="Escribe tu pregunta" autocomplete="off" />
+                            <button type="submit" class="send-button" aria-label="Enviar">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                    <path d="M22 2L11 13" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
                             </button>
-                        </div>
+                        </form>
                     </div>
                 </section>
 
@@ -224,9 +225,7 @@
         </div>
     </main>
 
-    <script src="/widget/quixa-chat.js"
-            data-endpoint="http://localhost:5678/webhook/chat"
-            data-titulo="Consultor Virtual"
-            data-subtitulo="QUIXA GROUP"></script>
+    <script src="chat-inline.js"
+            data-endpoint="http://localhost:5678/webhook/chat"></script>
 </body>
 </html>
