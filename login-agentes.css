@@ -1,0 +1,237 @@
+/* Login de agentes QUIXA */
+
+.login-main {
+    min-height: calc(100vh - 90px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 56px 24px;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 460px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    box-shadow: 0 18px 50px rgba(43, 21, 101, 0.12);
+    padding: 40px;
+}
+
+.login-badge {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: var(--lavender-1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.login-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 8px;
+}
+
+.login-subtitle {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-top: 28px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.form-input {
+    width: 100%;
+    padding: 13px 15px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: #FBFAFE;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--text-primary);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.form-input::placeholder {
+    color: #9A94B5;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--lavender-accent-2);
+    background: white;
+    box-shadow: 0 0 0 4px rgba(155, 127, 232, 0.15);
+}
+
+.password-wrap {
+    position: relative;
+}
+
+.password-wrap .form-input {
+    padding-right: 48px;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.password-toggle:hover {
+    background: var(--lavender-1);
+}
+
+.form-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14px;
+}
+
+.form-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.form-check input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary-mid-2);
+    cursor: pointer;
+}
+
+.form-link {
+    color: var(--primary-mid-2);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.form-link:hover {
+    text-decoration: underline;
+}
+
+.login-message {
+    font-size: 14px;
+    line-height: 1.5;
+    border-radius: 10px;
+    border: 1px solid transparent;
+}
+
+.login-message:not(:empty) {
+    padding: 12px 14px;
+}
+
+.login-message.is-error {
+    background: #FDECEC;
+    color: #9B1C1C;
+    border-color: #F5C2C2;
+}
+
+.login-message.is-info {
+    background: var(--lavender-1);
+    color: var(--primary-deep);
+    border-color: var(--lavender-3);
+}
+
+.login-submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 10px;
+    background: var(--primary-deep);
+    color: white;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(43, 21, 101, 0.18);
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.login-submit:hover {
+    background: #24105a;
+    box-shadow: 0 8px 26px rgba(43, 21, 101, 0.22);
+    transform: translateY(-1px);
+}
+
+.login-submit:active {
+    transform: translateY(0);
+}
+
+.login-footnote {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.login-footnote a {
+    color: var(--primary-mid-2);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.login-footnote a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+    .login-main {
+        min-height: calc(100vh - 76px);
+        padding: 32px 16px;
+    }
+
+    .login-card {
+        padding: 28px 22px;
+        border-radius: 16px;
+    }
+
+    .login-title {
+        font-size: 24px;
+    }
+}
