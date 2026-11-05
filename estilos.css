@@ -236,7 +236,8 @@ a.header-btn {
 }
 
 /* Anchor offset below the sticky header */
-#servicios {
+#servicios,
+#chat {
     scroll-margin-top: 110px;
 }
 
@@ -712,6 +713,36 @@ a.header-btn {
     background: #24105a;
     box-shadow: 0 4px 12px rgba(43, 21, 101, 0.16);
     transform: translateY(-1px);
+}
+
+.services-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+
+.services-title-row .services-title {
+    margin-bottom: 0;
+}
+
+.services-header-link {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary-mid-2);
+    text-decoration: none;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--lavender-1);
+    white-space: nowrap;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.services-header-link:hover,
+.services-header-link:focus-visible {
+    background: var(--lavender-2);
+    color: var(--primary-deep);
 }
 
 /* Responsive */
