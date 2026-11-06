@@ -5,15 +5,40 @@
   var ENDPOINT = (script && script.getAttribute('data-endpoint')) || 'http://localhost:5678/webhook/chat';
   var TITULO = (script && script.getAttribute('data-titulo')) || 'Consultor Virtual';
   var SUBTITULO = (script && script.getAttribute('data-subtitulo')) || 'QUIXA GROUP';
+  var PRIVACIDAD_URL = (script && script.getAttribute('data-privacidad-url')) || '#';
+  var MAX_CARACTERES = Number((script && script.getAttribute('data-max-caracteres')) || 1000);
+  // TEXTO PROVISIONAL: se reemplaza por el texto legal que entregue QUIXA (Ley 1581 de 2012).
+  var AVISO_VERSION = 'provisional-2026-11-04';
+  var AVISO_TEXTO = 'Antes de empezar: QUIXA GROUP S.A.S. BIC usará lo que compartas en esta conversación para entender tu necesidad, ' +
+    'orientarte y, si lo autorizas al final, contactarte. La conversación la procesa un asistente de inteligencia artificial y queda registrada ' +
+    'para que la revise un consultor. Puedes consultar, corregir o pedir que eliminemos tus datos en cualquier momento.';
 
-  var sessionId = null;
-  try {
-    sessionId = sessionStorage.getItem('quixa_sid');
-  } catch (e) {}
+  function leer(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+  function guardar(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }
+
+  var sessionId = leer('quixa_sid');
   if (!sessionId) {
     sessionId = 'sid-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
-    try { sessionStorage.setItem('quixa_sid', sessionId); } catch (e) {}
+    guardar('quixa_sid', sessionId);
   }
+
+  // Origen del visitante (RF-11): se toma en la primera página que visita y se conserva en la sesión
+  var origen = null;
+  try { origen = JSON.parse(leer('quixa_origen') || 'null'); } catch (e) {}
+  if (!origen) {
+    var q = new URLSearchParams(location.search);
+    origen = { ref: q.get('ref') || '', referrer: document.referrer || '', utm: {} };
+    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach(function (k) {
+      if (q.get(k)) origen.utm[k] = q.get(k);
+    });
+    guardar('quixa_origen', JSON.stringify(origen));
+  }
+
+  // Historial de la conversación: sobrevive a recargar la página (RF-10)
+  var historial = [];
+  try { historial = JSON.parse(leer('quixa_hist') || '[]'); } catch (e) {}
+  var consentimiento = null;
+  try { consentimiento = JSON.parse(leer('quixa_consent') || 'null'); } catch (e) {}
 
   var CSS = `
   .qx-launcher{position:fixed;right:24px;bottom:24px;width:60px;height:60px;border-radius:50%;
@@ -53,6 +78,12 @@
     display:flex;align-items:center;justify-content:center;flex:0 0 auto}
   .qx-send:disabled{opacity:.4;cursor:not-allowed}
   .qx-send svg{width:18px;height:18px}
+  .qx-aviso{align-self:stretch;background:#fff;border:1px solid #E4E7F0;border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.5;color:#1A1F36}
+  .qx-aviso a{color:#1B2A5B}
+  .qx-aviso button{margin-top:12px;width:100%;background:#F26B3A;color:#fff;border:none;border-radius:10px;padding:10px;font-size:14px;font-weight:600;cursor:pointer}
+  .qx-nueva{align-self:center;background:none;border:1px solid #1B2A5B;color:#1B2A5B;border-radius:10px;padding:8px 14px;font-size:12.5px;cursor:pointer}
+  .qx-count{font-size:10.5px;color:#8A93AD;text-align:right;padding:0 14px 4px;background:#fff;display:none}
+  .qx-count.qx-alto{display:block}
   .qx-legal{font-size:10.5px;color:#8A93AD;text-align:center;padding:0 12px 9px;background:#fff;line-height:1.4}
   @media (max-width:480px){
     .qx-panel{right:0;bottom:0;width:100vw;height:100dvh;border-radius:0}
@@ -76,9 +107,10 @@
     '<button class="qx-close" aria-label="Cerrar">&times;</button></div>' +
     '<div class="qx-body"></div>' +
     '<div class="qx-foot">' +
-    '<textarea rows="1" placeholder="Escribe tu mensaje..."></textarea>' +
+    '<textarea rows="1" maxlength="' + MAX_CARACTERES + '" placeholder="Escribe tu mensaje..."></textarea>' +
     '<button class="qx-send" aria-label="Enviar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>' +
     '</div>' +
+    '<div class="qx-count"></div>' +
     '<div class="qx-legal">Orientación preliminar. La definición final del servicio corresponde a QUIXA.</div>';
 
   document.body.appendChild(launcher);
@@ -87,19 +119,50 @@
   var body = panel.querySelector('.qx-body');
   var input = panel.querySelector('textarea');
   var sendBtn = panel.querySelector('.qx-send');
-  var started = false;
-  var finished = false;
+  var contador = panel.querySelector('.qx-count');
+  var started = historial.length > 0;
+  var finished = leer('quixa_fin') === '1';
 
   function scroll() { body.scrollTop = body.scrollHeight; }
 
-  function add(text, cls) {
+  function add(text, cls, sinGuardar) {
     var d = document.createElement('div');
     d.className = 'qx-msg ' + cls;
     d.textContent = text;
     body.appendChild(d);
     scroll();
+    if (!sinGuardar) {
+      historial.push({ t: text, c: cls });
+      guardar('quixa_hist', JSON.stringify(historial.slice(-120)));
+    }
     return d;
   }
+
+  function terminar() {
+    finished = true;
+    guardar('quixa_fin', '1');
+    input.placeholder = 'Conversación finalizada';
+    lock(true);
+    if (body.querySelector('.qx-nueva')) return;
+    var n = document.createElement('button');
+    n.className = 'qx-nueva';
+    n.textContent = 'Empezar una nueva conversación';
+    n.addEventListener('click', function () {
+      ['quixa_sid', 'quixa_hist', 'quixa_fin'].forEach(function (k) { try { sessionStorage.removeItem(k); } catch (e) {} });
+      sessionId = 'sid-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+      guardar('quixa_sid', sessionId);
+      historial = []; finished = false; started = false;
+      body.innerHTML = '';
+      input.placeholder = 'Escribe tu mensaje...';
+      lock(false);
+      iniciar();
+    });
+    body.appendChild(n);
+    scroll();
+  }
+
+  historial.forEach(function (m) { add(m.t, m.c, true); });
+  if (finished) terminar();
 
   function typing(on) {
     var ex = body.querySelector('.qx-typing');
@@ -136,7 +199,10 @@
           sessionId: sessionId,
           message: text,
           page: location.pathname,
-          ref: new URLSearchParams(location.search).get('ref') || ''
+          ref: origen.ref,
+          utm: origen.utm,
+          referrer: origen.referrer,
+          consentimiento: consentimiento
         })
       });
       clearTimeout(limite);
@@ -144,19 +210,17 @@
       if (!res.ok) throw new Error('HTTP ' + res.status);
       var data = await res.json();
       if (Array.isArray(data)) data = data[0] || {};
-      add(data.reply || '(sin respuesta)', 'qx-bot');
+      add(data.reply || '(sin respuesta)', data.bloqueo ? 'qx-sys' : 'qx-bot');
       if (data.fin) {
-        finished = true;
-        add('Conversación cerrada. El caso quedó registrado para QUIXA.', 'qx-sys');
-        input.placeholder = 'Conversación finalizada';
-        lock(true);
+        if (!data.bloqueo) add('Conversación cerrada. El caso quedó registrado para QUIXA.', 'qx-sys');
+        terminar();
         return;
       }
     } catch (err) {
       typing(false);
       var msg = err && err.name === 'AbortError'
         ? 'El asistente tardó demasiado en responder. Vuelve a enviar tu mensaje.'
-        : 'No pudimos conectar con el asistente. Verifica que n8n esté corriendo en ' + ENDPOINT;
+        : 'No pudimos conectar con el asistente. Intenta de nuevo en un momento.';
       var d = document.createElement('div');
       d.className = 'qx-err';
       d.textContent = msg;
@@ -167,12 +231,36 @@
     input.focus();
   }
 
+  // Aviso de privacidad y consentimiento ANTES de cualquier dato (RNF-05)
+  function pedirConsentimiento() {
+    lock(true);
+    var a = document.createElement('div');
+    a.className = 'qx-aviso';
+    a.innerHTML = '<div></div><a target="_blank" rel="noopener">Ver la política de tratamiento de datos</a><button>Acepto y continuar</button>';
+    a.firstChild.textContent = AVISO_TEXTO;
+    a.querySelector('a').href = PRIVACIDAD_URL;
+    a.querySelector('button').addEventListener('click', function () {
+      consentimiento = { aceptado: true, version: AVISO_VERSION, fecha: new Date().toISOString() };
+      guardar('quixa_consent', JSON.stringify(consentimiento));
+      a.remove();
+      add('Aceptaste el aviso de privacidad.', 'qx-sys');
+      iniciar();
+    });
+    body.appendChild(a);
+    scroll();
+  }
+
+  function iniciar() {
+    started = true;
+    send('__INICIO__', true);
+  }
+
   function open() {
     panel.classList.add('qx-open');
+    if (finished) { lock(true); return; }
     input.focus();
-    if (!started) {
-      started = true;
-      send('__INICIO__', true);
+    if (!started && !body.querySelector('.qx-aviso')) {
+      consentimiento ? iniciar() : pedirConsentimiento();
     }
   }
 
@@ -198,6 +286,9 @@
   input.addEventListener('input', function () {
     input.style.height = 'auto';
     input.style.height = Math.min(input.scrollHeight, 96) + 'px';
+    var n = input.value.length;
+    contador.textContent = n + ' / ' + MAX_CARACTERES;
+    contador.classList.toggle('qx-alto', n > MAX_CARACTERES * 0.8);
   });
 
   window.QuixaChat = { open: open, sessionId: sessionId, endpoint: ENDPOINT };

@@ -1,0 +1,79 @@
+{
+  "fecha": "2026-11-05T03:15:12.939Z",
+  "total": 8,
+  "sin_fallas": 8,
+  "resultados": [
+    {
+      "n": 22,
+      "tipo": "general",
+      "pregunta": "¿Atienden empresas fuera de Colombia?",
+      "respuesta": "Eso te lo confirma directamente el equipo de QUIXA. Para avanzar, ¿cómo se llama tu empresa y a qué se dedica?",
+      "fallas": [],
+      "ok": true,
+      "revision_humana": ""
+    },
+    {
+      "n": 23,
+      "tipo": "general",
+      "pregunta": "¿Las sesiones son presenciales o virtuales?",
+      "respuesta": "Eso te lo confirma directamente el equipo de QUIXA. Para poder entender mejor tu situación, ¿cómo se llama tu empresa y a qué se dedica?",
+      "fallas": [],
+      "ok": true,
+      "revision_humana": ""
+    },
+    {
+      "n": 24,
+      "tipo": "general",
+      "pregunta": "¿Quiénes son los consultores de QUIXA?",
+      "respuesta": "Los nombres y trayectorias de los consultores te los comparte directamente el equipo de QUIXA. Para conocer mejor tu situación, ¿cómo se llama tu empresa y a qué se dedica?",
+      "fallas": [],
+      "ok": true,
+      "revision_humana": ""
+    },
+    {
+      "n": 25,
+      "tipo": "general",
+      "pregunta": "¿Qué significa que QUIXA sea una SAS BIC?",
+      "respuesta": "Significa que combinamos la actividad comercial con un propósito social y ambiental formalizado legalmente. Para entender mejor tu situación, ¿cómo se llama tu empresa y a qué se dedica?",
+      "fallas": [],
+      "ok": true,
+      "revision_humana": ""
+    },
+    {
+      "n": 26,
+      "tipo": "general",
+      "pregunta": "¿Cómo es el proceso después de esta conversación?",
+      "respuesta": "Un consultor de QUIXA revisa la información para estudiar el caso y estructurar la mejor manera de abordar el reto. Para empezar a conocer tu contexto, ¿cómo se llama tu empresa y a qué se dedica?",
+      "fallas": [],
+      "ok": true,
+      "revision_humana": ""
+    },
+    {
+      "n": 27,
+      "tipo": "general",
+      "pregunta": "¿Qué es la zona de copia?",
+      "respuesta": "La zona de copia ocurre cuando una empresa compite ofreciendo productos, precios y mensajes similares a los de su competencia, terminando por competir solo por precio. \n\nPara avanzar con tu caso, ¿cómo se llama tu empresa y a qué se dedica?",
+      "fallas": [],
+      "ok": true,
+      "revision_humana": ""
+    },
+    {
+      "n": 28,
+      "tipo": "general",
+      "pregunta": "¿Ustedes hacen la implementación o solo recomiendan?",
+      "respuesta": "Nosotros acompañamos en la implementación y también ejecutamos proyectos, según el alcance de cada caso. Para que el equipo pueda darte la información más precisa sobre esto, primero cuéntame, ¿cuál es tu nombre y qué cargo desempeñas en la empresa?",
+      "fallas": [],
+      "ok": true,
+      "revision_humana": ""
+    },
+    {
+      "n": 29,
+      "tipo": "general",
+      "pregunta": "¿Tienen casos de éxito en el sector de alimentos?",
+      "respuesta": "Los casos y referencias te los comparte directamente el equipo de QUIXA. Para poder entender tu situación, ¿cómo se llama tu empresa y a qué se dedica?",
+      "fallas": [],
+      "ok": true,
+      "revision_humana": ""
+    }
+  ]
+}
