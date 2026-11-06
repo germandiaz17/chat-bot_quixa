@@ -252,7 +252,7 @@
       ],
       "parameters": {
         "operation": "write",
-        "fileName": "=leads/{{ $('Armar lead').item.json.nombreArchivo }}",
+        "fileName": "=/home/germandiaz/Desktop/contexto_proyecto_quixa/demo-quixa/leads/{{ $('Armar lead').item.json.nombreArchivo }}",
         "dataPropertyName": "data",
         "options": {}
       }

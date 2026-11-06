@@ -25,23 +25,6 @@ Para detener todo: `./detener-demo.sh`
 
 > La primera vez n8n tarda ~40 segundos en levantar. El script espera solo.
 
-### Windows (PowerShell)
-
-```powershell
-.\iniciar-demo.cmd
-# ... y para parar:
-.\detener-demo.cmd
-```
-
-Los `.cmd` llaman a `iniciar-demo.ps1` / `detener-demo.ps1` con `-ExecutionPolicy Bypass`
-(no hace falta cambiar la política del sistema). En el primer arranque instalan las
-dependencias si faltan, crean `.env` desde `startup.env`, importan la credencial de Gemini
-y el flujo, lo publican y levantan n8n + el servidor web. Cada arranque vuelve a importar
-`flujo/quixa-consultor-virtual.json`, así que ese archivo es la fuente de verdad del flujo.
-
-Opciones: `-ProbarWebhook` hace una petición de prueba a Gemini; `-Reinstalar` fuerza
-`npm install`.
-
 ---
 
 ## Versión 2 — Guía de preguntas + enfoque QUIXA (26 oct 2026)
@@ -175,9 +158,7 @@ queda marcado como `revision_humana`.
 ## Archivos
 
 ```
-iniciar-demo.sh / detener-demo.sh   arrancar y parar todo (Linux/macOS/Git Bash)
-iniciar-demo.ps1 / detener-demo.ps1 equivalentes para Windows
-iniciar-demo.cmd / detener-demo.cmd lanzadores de Windows con ExecutionPolicy Bypass
+iniciar-demo.sh / detener-demo.sh   arrancar y parar todo
 prompts/orientador.md               cómo conversa el consultor  ← el corazón
 prompts/extractor.md                cómo se arma el registro
 flujo/quixa-consultor-virtual.json  el flujo de n8n (importable)
