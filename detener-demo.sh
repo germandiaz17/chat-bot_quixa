@@ -25,7 +25,7 @@ esperar_puerto_libre() {
 
 parar .web.pid "servidor web"
 parar .n8n.pid "n8n"
-esperar_puerto_libre 8080 "servidor web"
+esperar_puerto_libre "${PORT:-8090}" "servidor web"
 esperar_puerto_libre 5678 "n8n"
 echo "✓ todo detenido"
 exit 0

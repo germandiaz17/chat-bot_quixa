@@ -110,8 +110,17 @@ async function turno(message) {
   }
   console.log('\n' + '═'.repeat(70));
   console.log(`perfil=${PERFIL}  turnos=${n}  cerró=${!!res.fin}`);
+  // La ficha ya no viaja al navegador: se lee del archivo que guardó n8n
+  if (!res.lead) {
+    const fs = require('fs'), path = require('path'), dir = path.join(__dirname, 'leads');
+    await dormir(1500);
+    const f = fs.readdirSync(dir).filter(x => x.startsWith('lead-') && x.endsWith(sid.slice(-6) + '.json')).sort().pop();
+    if (f) { const j = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); res.lead = (Array.isArray(j) ? j[0] : j).lead; console.log('archivo:', f); }
+  }
   if (res.lead) {
     const l = res.lead;
+    console.log('  puntaje_lead           ', JSON.stringify(l.puntaje_lead && { valor: l.puntaje_lead.valor, categoria: l.puntaje_lead.categoria }));
+    console.log('  hubspot.crear          ', l.integraciones && l.integraciones.hubspot.crear, '| correo:', l.integraciones && l.integraciones.correo.asunto);
     for (const k of ['chat_type', 'servicio_orientado', 'classification', 'classification_reason', 'estado_conversacion',
       'nombre_contacto', 'empresa_nombre', 'etapa_empresa', 'anos_operacion_num', 'rango_ventas', 'rol_lider', 'ciudad', 'email', 'telefono',
       'autorizacion_datos', 'urgencia', 'problemas_quixa', 'frenos_detectados', 'senales_alerta_icp', 'ruta_posterior_probable',

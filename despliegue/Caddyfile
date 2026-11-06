@@ -1,0 +1,28 @@
+# HTTPS automático (Let's Encrypt) para el subdominio del chatbot.
+# Solo dos cosas son públicas: el archivo del widget y el webhook del chat.
+{$DOMINIO_BOT} {
+	encode gzip
+
+	handle /widget/* {
+		root * /srv
+		file_server
+		header Cache-Control "public, max-age=300"
+	}
+
+	handle /webhook/chat {
+		request_body {
+			max_size 16KB
+		}
+		reverse_proxy n8n:5678
+	}
+
+	handle {
+		respond "Not found" 404
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		-Server
+	}
+}

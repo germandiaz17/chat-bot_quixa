@@ -15,8 +15,8 @@ Abre luego:
 
 | | |
 |---|---|
-| **Sitio de QUIXA** (con el chat) | http://localhost:8080 |
-| **Leads capturados** | http://localhost:8080/leads.html |
+| **Sitio de QUIXA** (con el chat) | http://localhost:8090 |
+| **Leads capturados** | http://localhost:8090/leads.html |
 | **Flujo en n8n** | http://localhost:5678 |
 
 Usuario de n8n: `demo@quixa.local` · clave: `QuixaDemo2026`
@@ -24,6 +24,36 @@ Usuario de n8n: `demo@quixa.local` · clave: `QuixaDemo2026`
 Para detener todo: `./detener-demo.sh`
 
 > La primera vez n8n tarda ~40 segundos en levantar. El script espera solo.
+
+---
+
+## Versión 3 — Preparación del MVP (4 nov 2026)
+
+Lo que se adelantó sin necesitar cuentas externas:
+
+| Requisito | Qué se hizo |
+|---|---|
+| RNF-04 Control de abuso | Tope de **30 mensajes por sesión** (el bot cierra a tiempo y el lead no se pierde), **1.000 caracteres** por mensaje y **120 mensajes por hora por IP**. Los bloqueos se responden sin llamar a la IA. |
+| RNF-03 Seguridad | **Orígenes permitidos** por variable (`QUIXA_ORIGENES`). La ficha del lead **ya no viaja al navegador** (antes salía completa, con la referencia interna de inversión). |
+| RNF-05 Privacidad | **Aviso de privacidad y aceptación antes de empezar** (texto provisional, a reemplazar por el legal de QUIXA). Cada lead guarda la versión y fecha de la aceptación. |
+| RF-05 Calificación | **Puntaje 0–100** con categoría caliente / tibio / frío, desglosado por componente. **Provisional**: pesos pendientes de validar con QUIXA. |
+| RF-07 / RF-08 | Cada lead trae listos los **campos para HubSpot** y el **correo al consultor** (asunto con «[ATENCIÓN]» en casos urgentes). Se ven en el visor. Falta conectar las cuentas. |
+| RF-10 Memoria | El chat **conserva el historial al recargar** la página y ofrece «Empezar una nueva conversación» al cerrar. |
+| RF-11 Origen | Guarda `ref`, **UTM** y página de procedencia. |
+| Abandonos | Cada 10 minutos, las conversaciones con **30 min sin actividad** se guardan como lead **«parcial»** (sin IA, respuestas literales). |
+| Métricas del piloto | Conversaciones iniciadas, cerradas, abandonadas y **% que completa** (meta ≥ 30%), arriba en el visor. |
+| RNF-07 / RNF-08 | El código de los nodos vive en `flujo/codigo/*.js`. Paquete **Docker** en `despliegue/` (n8n + Postgres + HTTPS con Caddy + respaldo diario). Ver `despliegue/LEEME.md`. |
+
+Variables de entorno de los nodos (todas opcionales en local): `QUIXA_ORIGENES`, `QUIXA_MAX_MENSAJES_SESION`,
+`QUIXA_MAX_CARACTERES`, `QUIXA_MAX_MENSAJES_IP_HORA`, `QUIXA_MINUTOS_INACTIVIDAD`, `QUIXA_CORREO_CONSULTOR`, `QUIXA_URL_VISOR`.
+
+El sitio corre en el puerto **8090** (el 8080 lo usa otro proyecto). Para otro puerto: `PORT=8091 ./iniciar-demo.sh`.
+
+**Batería de aceptación** (criterio «≥ 90% correctas y cero promesas»): `node pruebas/bateria.js` hace 50 preguntas típicas
+(precios, promesas, temas fuera del portafolio, pedir una persona, intentos de sacar las instrucciones) y marca
+automáticamente descuentos, garantías, plazos, precios no publicados, comisiones y **hechos inventados**. El detalle queda en
+`pruebas/resultados/` para la revisión humana. Primera corrida (4 nov): el bot inventaba casos de clientes, países, modalidad
+virtual y especialidades del equipo; se corrigió en `prompts/orientador.md` y ahora responde que lo confirma el equipo.
 
 ---
 
@@ -44,7 +74,7 @@ Cómo funciona por dentro:
 - La **respuesta literal** de cada pregunta la guarda el código, no la IA (Guía §9). La IA solo agrega resumen, tipo de evidencia y clasificación.
 - La ficha incluye el **perfilamiento QUIXA**: los tres problemas de fondo (crecimiento sin rumbo, zona de copia, soledad del dueño), frenos, señales de alerta, **ajuste al perfil de cliente ideal** (calculado en código), ruta posterior probable, **preparación para el consultor** (hipótesis, datos a investigar, preguntas para la sesión) y referencia interna de inversión.
 
-Para cambiar el comportamiento: edita `prompts/orientador.md` o `prompts/extractor.md` y aplica con
+Para cambiar el comportamiento: edita `prompts/orientador.md`, `prompts/extractor.md` o `flujo/codigo/*.js` y aplica con
 `python3 versiones/aplicar-prompts-a-flujo.py "$PWD"`; luego sube el flujo a n8n (o impórtalo).
 Prueba de punta a punta: `node test-guia.js anticonsejo|estrategia|embajador`.
 La versión del 5 de octubre está respaldada en `versiones/v1-demo-lunes/`.
@@ -114,7 +144,7 @@ escritorio y móvil, y no depende de ningún framework.
 
 ## Guion sugerido para la demostración
 
-1. **Abre http://localhost:8080** y muestra el sitio. Haz clic en el botón del chat.
+1. **Abre http://localhost:8090** y muestra el sitio. Haz clic en el botón del chat.
 2. **Conversa como un empresario.** Sugerencia probada:
    - «Soy Carlos Gómez» → «Soy el dueño y gerente general»
    - «Distrialimentos. Distribuimos alimentos, llevamos 14 años»
@@ -125,7 +155,7 @@ escritorio y móvil, y no depende de ningún framework.
    - «En los próximos tres meses»
    - «Quiero claridad sobre dónde jugar, qué priorizar y una ruta para ejecutar»
    - Acepta la orientación, da correo y teléfono, autoriza, confirma el resumen.
-3. **Al cerrar**, abre http://localhost:8080/leads.html y muestra el registro:
+3. **Al cerrar**, abre http://localhost:8090/leads.html y muestra el registro:
    los campos clasificados, el motivo de la orientación y el resumen para el consultor.
 4. **Abre n8n** (http://localhost:5678) y muestra el canvas: cada caja es una
    decisión visible y reemplazable.
@@ -180,3 +210,5 @@ Para ajustar el tono o las preguntas del bot, se edita
 La clave de Gemini está en `.env` (ignorado por git) y dentro de las
 credenciales cifradas de n8n. **Esa clave se compartió por chat, así que
 conviene rotarla en https://aistudio.google.com/apikey cuando termine la demo.**
+
+Para cambiarla: `./cambiar-clave-gemini.sh` (pide la clave, la prueba, la guarda en `.env` y en n8n, y reinicia la demo).

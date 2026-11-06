@@ -54,6 +54,8 @@
                 </div>
             </section>
 
+            <div class="metricas" id="metricas"></div>
+
             <div class="cols">
                 <section class="lista-card" aria-label="Conversaciones">
                     <div class="lista-header">
@@ -98,11 +100,13 @@ function pintarLista(){
     const aj = (l.ajuste_perfil || {}).nivel;
     return `<div class="item ${i===0?'sel':''}" onclick="ver(${i},this)">
       <b>${esc(l.nombre_contacto) || '(sin nombre)'}</b>
-      <small>${esc(l.empresa_nombre) || '—'} · ${CHAT[l.chat_type] || 'versión anterior'}</small>
+      <small>${esc(l.empresa_nombre) || '—'} · ${CHAT[l.chat_type] || (l.motivo_parcial ? 'conversación incompleta' : 'versión anterior')}</small>
       <div class="tags"><span class="tag t-${est}">${bonito(est)}</span>
+      ${l.puntaje_lead ? `<span class="tag t-${l.puntaje_lead.categoria}">${bonito(l.puntaje_lead.categoria)} ${l.puntaje_lead.valor}</span>` : ''}
       ${aj && aj !== 'no_aplica' ? `<span class="tag t-${aj}">ajuste ${bonito(aj)}</span>` : ''}</div></div>`;
   }).join('');
-  ver(0);
+  const i = location.hash ? datos.findIndex(d => (d.lead || {}).conversation_id === decodeURIComponent(location.hash.slice(1))) : -1;
+  ver(i >= 0 ? i : 0);
 }
 
 function ver(i, node){
@@ -121,7 +125,13 @@ function ver(i, node){
   const alertas = [...(l.alertas_revision || []), ...(l.alertas || [])];
   if (alertas.length) h += `<div class="alerta"><b>Revisar</b><ul>${alertas.map(a => `<li>${esc(a)}</li>`).join('')}</ul></div>`;
 
-  if (!l.chat_type) {
+  if (l.motivo_parcial) h += `<div class="alerta"><b>Conversación incompleta.</b> ${esc(l.motivo_parcial)} Sin análisis de IA: revisar las respuestas literales.</div>`;
+
+  const pl = l.puntaje_lead;
+  if (pl) h += `<h3>Puntaje del lead · <span class="tag t-${pl.categoria}">${bonito(pl.categoria)}</span> ${pl.valor}/100 <span class="q">(provisional)</span></h3><div class="crit">` +
+    Object.entries(pl.componentes || {}).map(([k,v]) => `<div><b>${bonito(k)}</b>${v} / ${(pl.maximos || {})[k] ?? ''}</div>`).join('') + `</div><p class="q">${esc(pl.nota)}</p>`;
+
+  if (!l.chat_type && !l.motivo_parcial) {
     // Lead de la versión anterior (demo del 5 de octubre)
     h += '<h3>Registro (versión anterior)</h3><table>' + Object.entries(l)
       .filter(([k,v]) => !['transcripcion','resumen_para_consultor'].includes(k) && val(v) !== '')
@@ -174,6 +184,21 @@ function ver(i, node){
       Object.entries(ri).map(([k,v]) => `<tr><td class="k">${bonito(k)}</td><td>${esc(v)}</td></tr>`).join('') + '</table>';
   }
 
+  const u = l.origen_utm || {}, cs = l.consentimiento_aviso;
+  const origen = [['Página', l.origen_pagina], ['Etiqueta ref', l.origen_ref], ['Viene de', l.origen_referrer],
+    ...Object.entries(u).map(([k, v]) => [k, v]), ['Inicio de la conversación', l.inicio_conversacion],
+    ['Aviso de privacidad', cs ? (cs.aceptado ? `aceptado (${cs.version || 's/v'}, ${cs.fecha || ''})` : 'no registrado') : '']].filter(([, v]) => v);
+  if (origen.length) h += '<h3>Origen y consentimiento</h3><table>' + origen.map(([k, v]) => `<tr><td class="k">${esc(k)}</td><td>${esc(v)}</td></tr>`).join('') + '</table>';
+
+  const ig = l.integraciones;
+  if (ig) {
+    h += `<h3>Integraciones (listas para el MVP)</h3><table>
+      <tr><td class="k">HubSpot</td><td>${ig.hubspot.crear ? 'Se crearía o actualizaría el contacto' : 'No se crearía el contacto'}. ${esc(ig.hubspot.motivo)}</td></tr>
+      <tr><td class="k">Correo al consultor</td><td>${esc(ig.correo.asunto)}${ig.correo.para ? '<br><span class="q">Para: ' + esc(ig.correo.para) + '</span>' : ''}</td></tr></table>`;
+    h += `<details><summary>Ver el correo que recibiría el consultor</summary><iframe class="correo" sandbox srcdoc="${esc(ig.correo.html)}"></iframe></details>`;
+    h += `<details><summary>Ver datos que irían a HubSpot</summary><pre>${esc(JSON.stringify({ contacto: ig.hubspot.contacto, empresa: ig.hubspot.empresa }, null, 2))}</pre></details>`;
+  }
+
   if (l.transcripcion) h += `<details><summary>Ver transcripción</summary><pre>${esc(l.transcripcion)}</pre></details>`;
   h += `<details><summary>Ver JSON completo</summary><pre>${esc(JSON.stringify(l, null, 2))}</pre></details>`;
   document.getElementById('detalle').innerHTML = h;
@@ -181,6 +206,16 @@ function ver(i, node){
 
 fetch('/api/leads').then(r => r.json()).then(d => { datos = d; pintarLista(); })
   .catch(() => { document.getElementById('lista').innerHTML = '<div class="vacio">No se pudo cargar. Abre esta página desde el servidor de la demo.</div>'; });
+
+fetch('/api/metricas').then(r => r.json()).then(m => {
+  const dias = (m && m.por_dia) || [];
+  if (!dias.length) return;
+  const t = dias.reduce((a, d) => ({ ini: a.ini + d.iniciadas, cer: a.cer + d.cerradas, par: a.par + d.parciales, sin: a.sin + d.sin_mensajes }), { ini: 0, cer: 0, par: 0, sin: 0 });
+  document.getElementById('metricas').innerHTML =
+    `<div><b>${t.ini}</b><span>conversaciones iniciadas</span></div><div><b>${t.cer}</b><span>llegaron al cierre</span></div>` +
+    `<div><b>${t.par}</b><span>abandonadas con respuestas</span></div><div><b>${t.sin}</b><span>abrieron sin escribir</span></div>` +
+    `<div><b>${t.ini ? Math.round(100 * t.cer / t.ini) + '%' : '—'}</b><span>completan (meta ≥ 30%)</span></div>`;
+}).catch(() => {});
 </script>
 </body>
 </html>

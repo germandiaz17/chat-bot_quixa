@@ -4,11 +4,12 @@ cd "$(dirname "$0")"
 
 AZUL='\033[1;34m'; VERDE='\033[1;32m'; AMAR='\033[1;33m'; ROJO='\033[1;31m'; OFF='\033[0m'
 set -a; . ./.env; set +a
+PUERTO_WEB="${PORT:-8090}"   # 8080 lo usa otro proyecto (tuyoya-os); otro puerto: PORT=8091 ./iniciar-demo.sh
 
 echo -e "${AZUL}▸ QUIXA · Consultor Virtual — demo local${OFF}\n"
 
 vivo_n8n() { curl -sf -o /dev/null -m 4 http://localhost:5678/healthz 2>/dev/null; }
-vivo_web()  { curl -sf -o /dev/null -m 4 http://localhost:8080/ 2>/dev/null; }
+vivo_web()  { curl -sf -o /dev/null -m 4 http://localhost:$PUERTO_WEB/ 2>/dev/null; }
 
 # 1. n8n
 if vivo_n8n; then
@@ -46,7 +47,12 @@ if echo "$RESP" | grep -q '"reply"'; then
 else
   echo -e "${AMAR}sin respuesta${OFF}"
   echo "     $(echo "$RESP" | head -c 160)"
-  echo -e "     ${AMAR}Causa más probable: cuota de Gemini agotada (15 peticiones/minuto). Espera un minuto.${OFF}"
+  if tail -200 n8n.log 2>/dev/null | grep -q "reported as leaked\|API key not valid\|API_KEY_INVALID"; then
+    echo -e "     ${ROJO}Google bloqueó la clave de Gemini. Crea una nueva en https://aistudio.google.com/apikey${OFF}"
+    echo -e "     ${ROJO}y cámbiala con:  ./cambiar-clave-gemini.sh${OFF}"
+  else
+    echo -e "     ${AMAR}Causa más probable: cuota de Gemini agotada (15 peticiones/minuto). Espera un minuto.${OFF}"
+  fi
 fi
 
 # 4. Servidor web
@@ -54,15 +60,15 @@ if vivo_web; then
   echo -e "  ${VERDE}✓${OFF} servidor web ya estaba corriendo"
 else
   echo -n "  Arrancando servidor web... "
-  node servidor-demo.js > servidor.log 2>&1 &
+  PORT=$PUERTO_WEB node servidor-demo.js > servidor.log 2>&1 &
   echo $! > .web.pid
-  curl -sf -o /dev/null --retry 25 --retry-delay 1 --retry-connrefused -m 30 http://localhost:8080/ \
+  curl -sf -o /dev/null --retry 25 --retry-delay 1 --retry-connrefused -m 30 http://localhost:$PUERTO_WEB/ \
     && echo -e "${VERDE}listo${OFF}" || echo -e "${ROJO}falló${OFF}"
 fi
 
 echo
-echo -e "  ${AZUL}Sitio de QUIXA${OFF}   http://localhost:8080"
-echo -e "  ${AZUL}Leads captados${OFF}   http://localhost:8080/leads.html"
+echo -e "  ${AZUL}Sitio de QUIXA${OFF}   http://localhost:$PUERTO_WEB"
+echo -e "  ${AZUL}Leads captados${OFF}   http://localhost:$PUERTO_WEB/leads.html"
 echo -e "  ${AZUL}Flujo en n8n${OFF}     http://localhost:5678"
 echo -e "                   usuario: $N8N_EMAIL   clave: $N8N_PASSWORD"
 echo

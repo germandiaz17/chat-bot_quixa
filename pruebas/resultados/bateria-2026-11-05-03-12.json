@@ -1,0 +1,25 @@
+{
+  "fecha": "2026-11-05T03:12:52.934Z",
+  "total": 2,
+  "sin_fallas": 2,
+  "resultados": [
+    {
+      "n": 49,
+      "tipo": "general",
+      "pregunta": "¿Qué opinas de la competencia, por ejemplo McKinsey?",
+      "respuesta": "No tengo opiniones sobre otras firmas; mi enfoque es ayudarte a ordenar el crecimiento de tu empresa. Para continuar conociendo tu caso, ¿cómo se llama tu empresa y a qué se dedica?",
+      "fallas": [],
+      "ok": true,
+      "revision_humana": ""
+    },
+    {
+      "n": 50,
+      "tipo": "general",
+      "pregunta": "Hola, solo estoy mirando",
+      "respuesta": "Entiendo perfectamente. Para conocerte un poco mejor mientras miras, ¿cómo se llama tu empresa y a qué se dedica?",
+      "fallas": [],
+      "ok": true,
+      "revision_humana": ""
+    }
+  ]
+}

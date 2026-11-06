@@ -132,6 +132,38 @@
     color: #991B1B;
 }
 
+.t-caliente { background: #DCFCE7; color: #166534; }
+.t-tibio { background: #FEF3C7; color: #92400E; }
+.t-frio,
+.t-sin_autorizacion { background: #ECEAF3; color: var(--text-secondary); }
+
+/* Métricas del piloto */
+.metricas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin: 0 0 24px;
+}
+.metricas:empty { display: none; }
+.metricas div {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(43, 21, 101, 0.06);
+    padding: 14px 18px;
+}
+.metricas b { display: block; font-size: 26px; font-weight: 800; color: var(--primary); }
+.metricas span { font-size: 13px; color: var(--text-secondary); }
+
+iframe.correo {
+    width: 100%;
+    height: 560px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: white;
+    margin-top: 10px;
+}
+
 .detalle {
     background: #fff;
     border: 1px solid var(--border);
