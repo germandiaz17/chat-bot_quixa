@@ -9,7 +9,10 @@ const MIME = { '.html':'text/html; charset=utf-8', '.js':'application/javascript
   '.png':'image/png', '.jpg':'image/jpeg', '.ico':'image/x-icon' };
 
 http.createServer((req, res) => {
-  const url = new URL(req.url, `http://localhost:${PORT}`);
+  let url;
+  // Una URL rara (por ejemplo «//») no debe tumbar el servidor
+  try { url = new URL(req.url.replace(/^\/+/, '/'), `http://localhost:${PORT}`); }
+  catch (e) { res.writeHead(400); return res.end('URL inválida'); }
 
   if (url.pathname === '/api/leads') {
     let out = [];

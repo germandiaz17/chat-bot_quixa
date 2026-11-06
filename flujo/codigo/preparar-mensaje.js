@@ -47,7 +47,8 @@ if (!origenPermitido) {
 for (const k of Object.keys(st.ips)) if (!st.ips[k].some(t => ahora - t < 3600000)) delete st.ips[k];
 
 if (!bloqueo) {
-  if (esInicio && !ses.inicio && sessionId !== 'healthcheck' && !sessionId.startsWith('bateria-')) {
+  // La sesión empieza con el primer mensaje: el widget envía __INICIO__, el chat integrado de la portada no
+  if (!ses.inicio && sessionId !== 'healthcheck' && !sessionId.startsWith('bateria-')) {
     ses.inicio = new Date(ahora).toISOString();
     const dia = ses.inicio.slice(0, 10);
     st.metricas.iniciadas[dia] = (st.metricas.iniciadas[dia] || 0) + 1;
@@ -87,7 +88,12 @@ const exploratoria = /^(G[456]|AC|ES|JA|PC|EM)\d/.test(ultimo);
 const profundizaciones = codigos.filter(c => c === ultimo.replace(/-P$/, '') + '-P').length;
 
 let guia = '';
-if (codigos.length) {
+if (!codigos.length && !esInicio && !(ses.log || []).length) {
+  // Chat integrado de la portada: la página ya saludó y preguntó «¿Cuál es el principal reto de tu empresa?»
+  guia = 'La página ya te presentó y le preguntó a la persona por el principal reto de su empresa; este mensaje es su respuesta. ' +
+    'No repitas la presentación: agradece en una frase, muestra que entendiste el reto y empieza el CHAT GENERAL con G1. ' +
+    'Cuando llegues a G4, no lo preguntes desde cero: confirma el reto que ya contó y pide que lo amplíe.';
+} else if (codigos.length) {
   if (enCierre || (chat && !falta(ESP[chat]).length)) {
     let pend = ['C1', 'C2', 'C3', 'VT', 'C4', 'AUT', 'C5', 'C6'].filter(c => !hechos.has(c));
     if (hechos.has('G1')) pend = pend.filter(c => c !== 'C1');
