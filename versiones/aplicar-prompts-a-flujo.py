@@ -95,5 +95,9 @@ conectar('Buscar abandonadas', [['Parcial a archivo']])
 conectar('Parcial a archivo', [['Guardar parcial']])
 
 salida = pathlib.Path(sys.argv[2]) if len(sys.argv) > 2 else flujo_path
+if salida != flujo_path:
+    # Variante del servidor: n8n con Postgres exige un id para importar el flujo
+    d.setdefault('id', 'quixaConsultor01')
+    d['name'] = 'QUIXA · Consultor Virtual'
 salida.write_text(json.dumps(d, ensure_ascii=False, indent=2))
 print('flujo actualizado:', salida)

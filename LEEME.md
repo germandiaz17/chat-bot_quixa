@@ -1,7 +1,19 @@
-# QUIXA · Consultor Virtual — Demo
+# QUIXA · Consultor Virtual
 
-Prototipo conversacional para la reunión del **lunes 5 de octubre de 2026**.
-Corre **entero en local** y **sin costo**: n8n autoalojado + Gemini en su capa gratuita.
+Chatbot consultor para la web de QUIXA: conversa con el visitante siguiendo la Guía de preguntas, lo orienta al servicio
+adecuado y deja una ficha del lead para el consultor. Construido con n8n (autoalojado) y un modelo de IA (hoy Gemini).
+
+**Estado (noviembre 2026):** versión 3, preparada para el MVP. Ver la sección «Versión 3» más abajo.
+
+| Para… | Ver |
+|---|---|
+| Probarlo en un computador | «Arrancar», aquí abajo |
+| Instalarlo en un servidor (VPS con Docker, HTTPS y Postgres) | [`despliegue/LEEME.md`](despliegue/LEEME.md) |
+| Llevarlo a producción con la web de QUIXA (Netlify) | [`despliegue/PLAN-PRODUCCION.md`](despliegue/PLAN-PRODUCCION.md) |
+| Cambiar cómo conversa | `prompts/orientador.md` (sección «Versión 2») |
+
+La primera versión fue un prototipo para la reunión del **lunes 5 de octubre de 2026**. Corre **entero en local** y
+**sin costo**: n8n autoalojado + Gemini en su capa gratuita.
 
 ---
 

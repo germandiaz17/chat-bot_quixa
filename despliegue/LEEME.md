@@ -39,7 +39,8 @@ docker compose exec n8n n8n import:workflow --input=/tmp/flujo.json
 ```
 
 5. **Entrar al editor** desde tu computador: `ssh -L 5678:localhost:5678 usuario@servidor` y abrir http://localhost:5678.
-   Crear el usuario administrador, crear la credencial de la IA, asignarla a los nodos del modelo y **activar** el flujo.
+   Crear el usuario administrador y, en el nodo *Gemini*, crear la credencial de la IA (n8n la asigna también a *Gemini respaldo*
+   y *Gemini extractor*). Guardar con Ctrl+S y **publicar** el flujo (botón *Publish*).
 
 6. **Copias de seguridad diarias**: `crontab -e` y agregar
    `15 3 * * * /opt/quixa/despliegue/respaldo.sh >> /var/log/quixa-respaldo.log 2>&1`
