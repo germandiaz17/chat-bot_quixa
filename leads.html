@@ -71,7 +71,7 @@
 
 <script>
 const CHAT = { general:'Chat general', anticonsejo_1a1:'Anticonsejo 1:1', estrategia:'Consultoría en Estrategia',
-  junta_asesora:'Junta Asesora', proyectos_consultoria:'Proyectos de Consultoría', embajadores:'Programa de Embajadores' };
+  junta_asesora:'Junta Asesora', formulario_contacto:'Formulario de contacto', proyectos_consultoria:'Proyectos de Consultoría', embajadores:'Programa de Embajadores' };
 const PROBLEMA = { crecimiento_sin_rumbo:'Crecimiento sin rumbo', zona_de_copia:'Zona de copia', soledad_del_dueno:'Soledad del dueño' };
 const CRITERIO = { lider:'Líder', trayectoria:'Trayectoria +10 años', tamano:'Ventas 6.000–50.000 M', senales:'Señales de alerta' };
 let datos = [];
@@ -131,7 +131,10 @@ function ver(i, node){
   if (pl) h += `<h3>Puntaje del lead · <span class="tag t-${pl.categoria}">${bonito(pl.categoria)}</span> ${pl.valor}/100 <span class="q">(provisional)</span></h3><div class="crit">` +
     Object.entries(pl.componentes || {}).map(([k,v]) => `<div><b>${bonito(k)}</b>${v} / ${(pl.maximos || {})[k] ?? ''}</div>`).join('') + `</div><p class="q">${esc(pl.nota)}</p>`;
 
-  if (!l.chat_type && !l.motivo_parcial) {
+  if (l.chat_type === 'formulario_contacto') {
+    h += '<h3>Datos del formulario de contacto</h3><table>' + filas(l, [['empresa_nombre','Empresa'],['nombre_contacto','Persona de contacto'],
+      ['cargo_contacto','Cargo o rol'],['email','Correo'],['telefono','Teléfono'],['fecha','Fecha']]) + '</table>';
+  } else if (!l.chat_type && !l.motivo_parcial) {
     // Lead de la versión anterior (demo del 5 de octubre)
     h += '<h3>Registro (versión anterior)</h3><table>' + Object.entries(l)
       .filter(([k,v]) => !['transcripcion','resumen_para_consultor'].includes(k) && val(v) !== '')

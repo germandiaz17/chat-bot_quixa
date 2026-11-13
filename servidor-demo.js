@@ -14,6 +14,57 @@ http.createServer((req, res) => {
   try { url = new URL(req.url.replace(/^\/+/, '/'), `http://localhost:${PORT}`); }
   catch (e) { res.writeHead(400); return res.end('URL inválida'); }
 
+  // Formulario «¿Quieres comunicarte con nosotros?» (contacto.js): se guarda como lead en leads/
+  if (url.pathname === '/api/contacto' && req.method === 'POST') {
+    let cuerpo = '';
+    req.on('data', c => {
+      cuerpo += c;
+      if (cuerpo.length > 8000) { res.writeHead(413); res.end(); req.destroy(); }
+    });
+    req.on('end', () => {
+      if (res.writableEnded) return;
+      let d;
+      try { d = JSON.parse(cuerpo); } catch (e) { d = null; }
+      const txt = (v, max) => String(v ?? '').trim().slice(0, max);
+      const c = d && {
+        empresa: txt(d.empresa, 100), nombre: txt(d.nombre, 100), cargo: txt(d.cargo, 100),
+        correo: txt(d.correo, 120), telefono: txt(d.telefono, 40), pagina: txt(d.pagina, 200)
+      };
+      const valido = c && c.empresa.length >= 2 && c.nombre.length >= 2 && c.cargo.length >= 2 &&
+        /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(c.correo) && c.telefono.replace(/\D/g, '').length >= 7;
+      if (!valido) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        return res.end(JSON.stringify({ ok: false, error: 'Datos incompletos o inválidos' }));
+      }
+      const ahora = new Date();
+      const sello = ahora.toISOString().replace(/[:T]/g, '-').replace(/\..+/, '');
+      const id = `contacto-${sello}-${Math.random().toString(36).slice(2, 8)}`;
+      const lead = {
+        conversation_id: id,
+        chat_type: 'formulario_contacto',
+        estado_conversacion: 'formulario',
+        fecha: ahora.toISOString(),
+        empresa_nombre: c.empresa,
+        nombre_contacto: c.nombre,
+        cargo_contacto: c.cargo,
+        email: c.correo,
+        telefono: c.telefono,
+        origen_pagina: c.pagina,
+        resumen_para_consultor: 'Pidió que lo contacten desde el formulario de la web. No conversó con el asistente: no hay diagnóstico.'
+      };
+      try {
+        fs.mkdirSync(path.join(ROOT, 'leads'), { recursive: true });
+        fs.writeFileSync(path.join(ROOT, 'leads', id + '.json'), JSON.stringify({ lead }, null, 2));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+        return res.end(JSON.stringify({ ok: false }));
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ ok: true }));
+    });
+    return;
+  }
+
   if (url.pathname === '/api/leads') {
     let out = [];
     try {

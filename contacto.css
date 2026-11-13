@@ -1,0 +1,232 @@
+/* Ventana «¿Quieres comunicarte con nosotros?» — se abre con cualquier elemento [data-abrir-contacto] */
+.qc-fondo {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(31, 17, 71, 0.45);
+    backdrop-filter: blur(3px);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.qc-fondo[hidden] { display: none; }
+.qc-fondo.qc-visible { opacity: 1; }
+
+.qc-ventana {
+    position: relative;
+    width: 100%;
+    max-width: 1000px;
+    max-height: calc(100vh - 48px);
+    overflow: auto;
+    display: grid;
+    grid-template-columns: 1fr 1px 1.15fr;
+    gap: 40px;
+    padding: 48px 48px 44px;
+    background: #FDFCFF;
+    border-radius: 28px;
+    box-shadow: 0 30px 80px rgba(43, 21, 101, 0.25);
+    isolation: isolate;
+    transform: translateY(12px) scale(0.98);
+    transition: transform 0.25s ease;
+}
+.qc-visible .qc-ventana { transform: none; }
+
+/* Curvas decorativas de las esquinas */
+.qc-ventana::before,
+.qc-ventana::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    border-radius: 50%;
+    pointer-events: none;
+}
+.qc-ventana::before {
+    width: 260px;
+    height: 260px;
+    top: -150px;
+    left: -150px;
+    background: radial-gradient(circle at 70% 70%, var(--lavender-accent-2, #9B7FE8) 0 55%, var(--lavender-accent, #B9A6F0) 56% 100%);
+}
+.qc-ventana::after {
+    width: 460px;
+    height: 300px;
+    bottom: -200px;
+    left: -170px;
+    background: radial-gradient(ellipse at 40% 60%, var(--primary-mid-2, #4A2C9B) 0 30%, var(--lavender-accent-2, #9B7FE8) 31% 60%, var(--lavender-accent, #B9A6F0) 61% 100%);
+    opacity: 0.85;
+}
+
+.qc-cerrar {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--primary-deep, #2B1565);
+    cursor: pointer;
+}
+.qc-cerrar:hover { background: var(--lavender-1, #EEEAFB); }
+
+/* Columna izquierda */
+.qc-intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding-bottom: 40px;
+}
+.qc-logo { width: 190px; height: auto; margin-bottom: 20px; }
+.qc-icono { color: var(--primary-mid-2, #4A2C9B); margin-bottom: 14px; }
+.qc-titulo {
+    font-size: 34px;
+    line-height: 1.15;
+    font-weight: 800;
+    color: var(--text-primary, #1F1147);
+    letter-spacing: -0.01em;
+}
+.qc-raya {
+    width: 110px;
+    height: 4px;
+    margin: 22px auto;
+    border-radius: 4px;
+    background: var(--lavender-accent-2, #9B7FE8);
+}
+.qc-texto {
+    font-size: 21px;
+    line-height: 1.45;
+    color: var(--text-primary, #1F1147);
+    max-width: 380px;
+}
+.qc-texto strong { color: var(--primary, #34197A); font-weight: 700; }
+
+.qc-divisor { background: var(--lavender-3, #D9D2F3); }
+
+/* Formulario */
+.qc-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-top: 28px;
+}
+.qc-campo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 22px;
+    height: 66px;
+    background: white;
+    border: 1.5px solid var(--lavender-3, #D9D2F3);
+    border-radius: 16px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.qc-campo:focus-within {
+    border-color: var(--lavender-accent-2, #9B7FE8);
+    box-shadow: 0 0 0 4px rgba(155, 127, 232, 0.18);
+}
+.qc-campo.qc-error { border-color: #D64545; }
+.qc-campo svg { flex-shrink: 0; color: var(--primary-mid-2, #4A2C9B); }
+.qc-campo input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 18px;
+    color: var(--text-primary, #1F1147);
+}
+.qc-campo input::placeholder { color: var(--text-tertiary, #6B668A); }
+
+.qc-aviso {
+    min-height: 20px;
+    font-size: 14px;
+    color: #B83232;
+}
+.qc-aviso.qc-ok { color: var(--primary, #34197A); }
+
+.qc-enviar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    height: 70px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--primary, #34197A);
+    color: white;
+    font: inherit;
+    font-size: 21px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+.qc-enviar:hover { background: var(--primary-deep, #2B1565); }
+.qc-enviar:active { transform: scale(0.99); }
+.qc-enviar:disabled { opacity: 0.6; cursor: wait; }
+
+/* Mensaje final */
+.qc-gracias {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    text-align: center;
+    padding: 40px 12px;
+}
+.qc-gracias[hidden],
+.qc-form[hidden] { display: none; }
+.qc-gracias h3 { font-size: 26px; color: var(--text-primary, #1F1147); }
+.qc-gracias p { font-size: 18px; color: var(--text-secondary, #5B5675); max-width: 360px; }
+
+/* Botón del menú que abre la ventana */
+.nav-contacto {
+    border: 0;
+    background: none;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+/* En pantallas angostas el menú se oculta: se deja visible solo «Contacto» */
+@media (max-width: 968px) {
+    .header .nav { display: flex; margin-left: auto; }
+    .header .nav > :not(.nav-contacto) { display: none; }
+    .header .nav-contacto { font-size: 16px; }
+}
+
+@media (max-width: 860px) {
+    .qc-fondo { padding: 12px; align-items: flex-start; }
+    .qc-ventana {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 36px 20px 24px;
+        max-height: calc(100vh - 24px);
+        border-radius: 22px;
+    }
+    .qc-divisor { display: none; }
+    .qc-intro { padding-bottom: 0; }
+    .qc-logo { width: 130px; margin-bottom: 8px; }
+    .qc-icono { display: none; }
+    .qc-titulo { font-size: 24px; }
+    .qc-raya { margin: 12px auto; }
+    .qc-texto { font-size: 16px; }
+    .qc-form { padding-top: 12px; gap: 12px; }
+    .qc-campo { height: 56px; padding: 0 16px; }
+    .qc-campo input { font-size: 15px; }
+    .qc-campo { gap: 12px; }
+    .qc-enviar { height: 58px; font-size: 18px; }
+    .qc-ventana::after { width: 300px; height: 200px; bottom: -140px; left: -140px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .qc-fondo, .qc-ventana { transition: none; }
+}
